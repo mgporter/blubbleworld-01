@@ -9,7 +9,7 @@ class WorldBuilder {
   zSize = 18;   // Left to Right dimension
   xSize = 12;   // Top to Bottom dimension
   pondPercent = 30;   // tiles below this percent are pond
-  mountainPercent = 86;   // tiles above this percent are mountain
+  mountainPercent = 70;   // tiles above this percent are mountain
 
   #camera;
   #scene;

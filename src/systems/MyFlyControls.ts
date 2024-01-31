@@ -59,8 +59,8 @@ class MyFlyControls extends EventDispatcher {
     // MIN: DOWN, HEIGHTMIN, LEFT
     // MAX: UP, HEIGHTMAX, RIGHT
     this.#moveLimits = {
-      MIN: new Vector3(-12, 2, -1),
-      MAX: new Vector3(this.#worldSize.width-7, 12, this.#worldSize.length+4)
+      MIN: new Vector3(-16, 2, -1),
+      MAX: new Vector3(this.#worldSize.width-7, 18, this.#worldSize.length+4)
     }
 
 		this.enabled = true;
@@ -106,7 +106,7 @@ class MyFlyControls extends EventDispatcher {
 		_keydown = this.keydown.bind( this );
 		_keyup = this.keyup.bind( this );
 
-		this.#domElement.addEventListener('contextmenu', _contextmenu);
+		// this.#domElement.addEventListener('contextmenu', _contextmenu);
 		// this.#domElement.addEventListener('pointerdown', _pointerdown);
 		// this.#domElement.addEventListener('pointermove', _pointermove);
 		// this.#domElement.addEventListener('pointerup', _pointerup);
@@ -375,11 +375,11 @@ class MyFlyControls extends EventDispatcher {
 
   dispose() {
 
-    this.#domElement.removeEventListener( 'contextmenu', _contextmenu );
-    this.#domElement.removeEventListener( 'pointerdown', _pointerdown );
-    this.#domElement.removeEventListener( 'pointermove', _pointermove );
-    this.#domElement.removeEventListener( 'pointerup', _pointerup );
-    this.#domElement.removeEventListener( 'pointercancel', _pointercancel );
+    // this.#domElement.removeEventListener( 'contextmenu', _contextmenu );
+    // this.#domElement.removeEventListener( 'pointerdown', _pointerdown );
+    // this.#domElement.removeEventListener( 'pointermove', _pointermove );
+    // this.#domElement.removeEventListener( 'pointerup', _pointerup );
+    // this.#domElement.removeEventListener( 'pointercancel', _pointercancel );
 
     window.removeEventListener( 'keydown', _keydown );
     window.removeEventListener( 'keyup', _keyup );

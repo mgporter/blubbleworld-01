@@ -70,8 +70,13 @@ class Board {
         } 
         else {
           // Create Mountain instance
-          instancedMountainCube.setMatrixAt(mountainCubeCount, matrix);
+          const matrixCopy = matrix.clone();
+          
+          const ratio = (perlinValue - this.#mountainThreshold) / (this.#noiseMaker.getMax() - this.#mountainThreshold);
+          matrixCopy.scale(new Vector3(1, 1, (ratio * 0.3) + 1));
+          instancedMountainCube.setMatrixAt(mountainCubeCount, matrixCopy);
           instancedMountainCube.setCoordinates(mountainCubeCount, new Vector3(-i, -j, 0));
+          
           mountainCubeCount++;
         }
 

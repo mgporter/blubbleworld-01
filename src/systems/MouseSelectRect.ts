@@ -56,10 +56,12 @@ class MouseSelectRect extends MouseEvents implements Selector {
     this.getObjects().forEach(mesh => {
       if (this.#isInstancedMesh(mesh)) {
         mesh.getSelectionObjects()
-          .filter(obj => obj.isSelected())
+          .filter(obj => obj.isSelectedOrHovered())
           .forEach(obj => selection.push(new Vector2(obj.getCoordinates().x, obj.getCoordinates().y)));
-      } else {
-        if (mesh.isSelected()) selection.push(new Vector2(mesh.getCoordinates().x, mesh.getCoordinates().y));
+      } 
+      else {
+        if (mesh.isSelectedOrHovered()) 
+          selection.push(new Vector2(mesh.getCoordinates().x, mesh.getCoordinates().y));
       }
     })
 
@@ -68,12 +70,13 @@ class MouseSelectRect extends MouseEvents implements Selector {
 
   #onClick() {
 
-    if (this.#currentTarget) {
+    if (this.#currentTarget) {   // If the mouse is over a clickable target
 
       if (this.#inSelectionMode) {
         this.#returnSelection();
         this.#clearSelection();
       } else {
+        this.#currentTarget.select();
         this.#originOfSelection = this.#currentTarget;
         this.#inSelectionMode = true;
         this.#currentTarget = null;
@@ -89,17 +92,18 @@ class MouseSelectRect extends MouseEvents implements Selector {
   }
 
   #clearSelection() {
+
+    this.getObjects().forEach(meshObj => {
+      if (this.#isInstancedMesh(meshObj)) meshObj.unselectAndUnhoverAll();
+      else meshObj.unselectAndUnhover();
+    });
+
+    if (this.#currentTarget) this.#currentTarget.hover();
+
     this.#originOfSelection = null;
     this.#currentTarget = null;
     this.#inSelectionMode = false;
-    this.#unselectAll();
-  }
 
-  #unselectAll() {
-    this.getObjects().forEach(meshObj => {
-      if (this.#isInstancedMesh(meshObj)) meshObj.unselectAll();
-      else meshObj.unselect();
-    });
   }
 
   #isInstancedMesh(mesh: SelectableMesh | SelectableInstancedMesh): mesh is SelectableInstancedMesh {
@@ -133,9 +137,9 @@ class MouseSelectRect extends MouseEvents implements Selector {
 
     this.getObjects().forEach(x => {
       if (this.#isInstancedMesh(x)) {
-        x.getSelectionObjects().forEach(obj => this.#selectIfInBounds(obj, minX, maxX, minZ, maxZ));
+        x.getSelectionObjects().forEach(obj => this.#addSelectionRectangle(obj, minX, maxX, minZ, maxZ));
       } else {
-        this.#selectIfInBounds(x, minX, maxX, minZ, maxZ);
+        this.#addSelectionRectangle(x, minX, maxX, minZ, maxZ);
       }
     });
 
@@ -146,11 +150,11 @@ class MouseSelectRect extends MouseEvents implements Selector {
     return coord.x >= minX && coord.x <= maxX && coord.y >= minZ && coord.y <= maxZ;
   }
 
-  #selectIfInBounds(obj: Selectable, minX: number, maxX: number, minZ: number, maxZ: number) {
+  #addSelectionRectangle(obj: Selectable, minX: number, maxX: number, minZ: number, maxZ: number) {
     if (this.#inBounds(obj, minX, maxX, minZ, maxZ)) {
-      obj.select();
+      obj.hover();
     } else {
-      obj.unselect();
+      obj.unhover();
     }
   }
 
@@ -176,12 +180,12 @@ class MouseSelectRect extends MouseEvents implements Selector {
         
         if (intersections[0].object === this.#currentTarget) return;
 
-        if (this.#currentTarget) this.#currentTarget.unselect();
+        if (this.#currentTarget) this.#currentTarget.unhover();
         this.#currentTarget = intersections[0].object;
-        this.#currentTarget.select();        
+        this.#currentTarget.hover();
 
       } else {
-        if (this.#currentTarget) this.#currentTarget.unselect();
+        if (this.#currentTarget) this.#currentTarget.unhover();
         this.#currentTarget = null;
       }
 

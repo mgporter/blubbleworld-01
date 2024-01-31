@@ -23,7 +23,7 @@ class SelectableInstancedMesh extends InstancedMesh {
     createSelectionObjects?: boolean) {
 
     super(geometry, material, count);
-
+  
     const _createSelectionObjects = createSelectionObjects == undefined ? true : createSelectionObjects;
 
     if (_createSelectionObjects) {
@@ -37,7 +37,7 @@ class SelectableInstancedMesh extends InstancedMesh {
           i,
           this,
           this.changeToSelectedAppearance.bind(this),
-          this.changeToUnselectedAppearance.bind(this),
+          this.changeToDefaultAppearance.bind(this),
           this.changeToHoverAppearance.bind(this),
         )
       });
@@ -78,14 +78,18 @@ class SelectableInstancedMesh extends InstancedMesh {
     this.#selectionObjects.forEach(x => x.unselect());
   }
 
+  unhoverAll() {
+    this.#selectionObjects.forEach(x => x.unhover());
+  }
+
+  unselectAndUnhoverAll() {
+    this.#selectionObjects.forEach(x => x.unselectAndUnhover());
+  }
+
   // Hooks to implement later
-  changeToSelectedAppearance(index: number) {}
-
-  changeToUnselectedAppearance(index: number) {}
-
+  changeToDefaultAppearance(index: number) {}
   changeToHoverAppearance(index: number) {}
-
-  
+  changeToSelectedAppearance(index: number) {}
 
 }
 

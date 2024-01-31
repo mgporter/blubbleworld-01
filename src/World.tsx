@@ -2,9 +2,7 @@ import { useFrame, useThree } from "@react-three/fiber";
 import { useEffect } from "react"
 import { MyFlyControls } from "./systems/MyFlyControls";
 import { WorldBuilder } from "./systems/WorldBuilder";
-import { SelectableMesh } from "./objects/SelectableMesh";
-import { SelectableInstancedMesh } from "./objects/SelectableInstancedMesh";
-import { Vector2, Vector3 } from "three";
+import { Vector2 } from "three";
 
 let flyControls: MyFlyControls;
 let worldBuilder: WorldBuilder;

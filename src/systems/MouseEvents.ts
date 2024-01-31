@@ -1,6 +1,5 @@
 import {
   Camera, 
-  Mesh, 
   Raycaster, 
   Vector2 } from "three";
 

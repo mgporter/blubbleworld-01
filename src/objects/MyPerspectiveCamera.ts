@@ -5,10 +5,12 @@ class MyPerspectiveCamera extends PerspectiveCamera {
   constructor(fov: number, aspect: number, near: number, far: number) {
     super(fov, aspect, near, far);
 
-    // Position: (RIGHT, UP, DOWN)
-    this.position.set(-4,6,12);
+    // Position: (DOWN, UP, RIGHT)
+    this.position.set(-9,10,10);
     this.rotation.order = "YZX";
-    this.rotation.set(-0.6, -1.4, 0);
+
+    // Rotation: (pointing up, pointing left, rotate in direction of view)
+    this.rotation.set(-0.6, -1.45, 0);
   }
 
 }

@@ -172,7 +172,7 @@ class InstancedGridCube extends SelectableInstancedMesh {
     this.instanceColor.needsUpdate = true;
   }
 
-  changeToUnselectedAppearance(index: number) {
+  changeToDefaultAppearance(index: number) {
     this.setColorAt(index, this.defaultColor);
     // @ts-expect-error instanceColor will not be null
     this.instanceColor.needsUpdate = true;
