@@ -1,14 +1,15 @@
 import { SelectableMesh } from "../objects/SelectableMesh";
 import { Selector } from "../types";
 import { MouseEvents } from "./MouseEvents";
-import { Camera, Raycaster } from "three";
+import { Camera, Raycaster, Vector2 } from "three";
 
-
+import { Selectable } from "../types";
+import { SelectableInstancedMesh } from "../objects/SelectableInstancedMesh";
 
 class MouseSelectRect extends MouseEvents implements Selector {
 
-  #currentTarget: SelectableMesh | null = null;
-  #originOfSelection: SelectableMesh | null = null;
+  #currentTarget: Selectable | null = null;
+  #originOfSelection: Selectable | null = null;
   #inSelectionMode = false;
   #callback;
 
@@ -23,8 +24,8 @@ class MouseSelectRect extends MouseEvents implements Selector {
     camera: Camera, 
     canvas: HTMLElement, 
     raycaster: Raycaster, 
-    objects: SelectableMesh[],
-    callback: (selection: SelectableMesh[]) => void) {
+    objects: SelectableMesh[] | SelectableInstancedMesh[],
+    callback: (selection: Vector2[]) => void) {
     super(camera, canvas, raycaster, objects);
 
     this.#callback = callback;
@@ -50,8 +51,19 @@ class MouseSelectRect extends MouseEvents implements Selector {
   }
 
   #returnSelection() {
-    const selected = (this.getObjects() as SelectableMesh[]).filter(x => x.isSelected());
-    this.#callback(selected);
+    const selection: Vector2[] = [];
+    
+    this.getObjects().forEach(mesh => {
+      if (this.#isInstancedMesh(mesh)) {
+        mesh.getSelectionObjects()
+          .filter(obj => obj.isSelected())
+          .forEach(obj => selection.push(new Vector2(obj.getCoordinates().x, obj.getCoordinates().y)));
+      } else {
+        if (mesh.isSelected()) selection.push(new Vector2(mesh.getCoordinates().x, mesh.getCoordinates().y));
+      }
+    })
+
+    this.#callback(selection);
   }
 
   #onClick() {
@@ -84,17 +96,26 @@ class MouseSelectRect extends MouseEvents implements Selector {
   }
 
   #unselectAll() {
-    (this.getObjects() as SelectableMesh[]).filter(x => x.isSelected()).forEach(x => x.unselect());
+    this.getObjects().forEach(meshObj => {
+      if (this.#isInstancedMesh(meshObj)) meshObj.unselectAll();
+      else meshObj.unselect();
+    });
+  }
+
+  #isInstancedMesh(mesh: SelectableMesh | SelectableInstancedMesh): mesh is SelectableInstancedMesh {
+    return (mesh as SelectableInstancedMesh).isInstancedMesh !== undefined;
   }
 
   #onMousedown() {}
 
   #onMouseup() {}
 
-  #updateRectangleSelection(origin: SelectableMesh, target: SelectableMesh) {
+  #updateRectangleSelection(origin: Selectable, target: Selectable) {
 
-    const originX = origin.getCoordinates().x, originZ = origin.getCoordinates().z;
-    const targetX = target.getCoordinates().x, targetZ = target.getCoordinates().z;
+    /* If we use different cubes, we may have to update the coordinates */
+
+    const originX = origin.getCoordinates().x, originZ = origin.getCoordinates().y;
+    const targetX = target.getCoordinates().x, targetZ = target.getCoordinates().y;
 
     let minX: number, maxX: number, minZ: number, maxZ: number;
 
@@ -110,25 +131,32 @@ class MouseSelectRect extends MouseEvents implements Selector {
       minZ = targetZ; maxZ = originZ;
     }
 
-    (this.getObjects() as SelectableMesh[]).forEach(x => {
-      if (this.#inBounds(x, minX, maxX, minZ, maxZ)) {
-        x.select();
+    this.getObjects().forEach(x => {
+      if (this.#isInstancedMesh(x)) {
+        x.getSelectionObjects().forEach(obj => this.#selectIfInBounds(obj, minX, maxX, minZ, maxZ));
       } else {
-        x.unselect();
+        this.#selectIfInBounds(x, minX, maxX, minZ, maxZ);
       }
     });
 
   }
 
-  #inBounds(obj: SelectableMesh, minX: number, maxX: number, minZ: number, maxZ: number) {
+  #inBounds(obj: Selectable, minX: number, maxX: number, minZ: number, maxZ: number) {
     const coord = obj.getCoordinates();
-    return coord.x >= minX && coord.x <= maxX && coord.z >= minZ && coord.z <= maxZ;
+    return coord.x >= minX && coord.x <= maxX && coord.y >= minZ && coord.y <= maxZ;
+  }
+
+  #selectIfInBounds(obj: Selectable, minX: number, maxX: number, minZ: number, maxZ: number) {
+    if (this.#inBounds(obj, minX, maxX, minZ, maxZ)) {
+      obj.select();
+    } else {
+      obj.unselect();
+    }
   }
 
   #onMousemove(e: MouseEvent) {
 
-    const intersections = 
-      this.getIntersectedObject(e) as {object: SelectableMesh}[];
+    const intersections = this.getIntersectedObject(e);
 
     if (this.#originOfSelection) {  // If in selection mode
 

@@ -12,6 +12,8 @@ import { LineBasicMaterial,
   PointsMaterial, 
   ShadowMaterial, 
   SpriteMaterial } from "three";
+import { SelectableMesh } from "./objects/SelectableMesh";
+import { InstancedMeshSelectionObject } from "./objects/InstancedMeshSelectionObject";
 
 export type ColoredMaterial = 
   MeshLambertMaterial | 
@@ -44,6 +46,8 @@ export type ColoredMaterial =
 //   unselect: (idx: number) => void;
 //   toggleSelect: (idx: number) => void;
 // }
+
+export type Selectable = SelectableMesh | InstancedMeshSelectionObject;
 
 export interface Selector {
   enable: () => void;

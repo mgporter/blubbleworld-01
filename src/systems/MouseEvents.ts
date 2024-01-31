@@ -4,10 +4,9 @@ import {
   Raycaster, 
   Vector2 } from "three";
 
+import { Selectable } from "../types";
 import { SelectableMesh } from "../objects/SelectableMesh";
 import { SelectableInstancedMesh } from "../objects/SelectableInstancedMesh";
-
-type Selectables = SelectableMesh | SelectableInstancedMesh;
 
 class MouseEvents {
 
@@ -15,9 +14,9 @@ class MouseEvents {
   #canvas;
   #raycaster;
   #mouse;
-  #objects: Selectables[];
+  #objects: SelectableMesh[] | SelectableInstancedMesh[];
   
-  constructor(camera: Camera, canvas: HTMLElement, raycaster: Raycaster, objects: Selectables[]) {
+  constructor(camera: Camera, canvas: HTMLElement, raycaster: Raycaster, objects: SelectableMesh[] | SelectableInstancedMesh[]) {
     this.#camera = camera;
     this.#canvas = canvas;
     this.#raycaster = raycaster;
@@ -39,7 +38,7 @@ class MouseEvents {
 
   getIntersectedObject(e: MouseEvent) {
     this.#raycaster.setFromCamera(this.#getPointerCoordinates(e), this.#camera);
-    return this.#raycaster.intersectObjects(this.#objects, false) as {object: Selectables}[];
+    return (this.#raycaster.intersectObjects(this.#objects, false) as unknown) as {object: Selectable}[];
   }
 
   #getPointerCoordinates(e: MouseEvent) {

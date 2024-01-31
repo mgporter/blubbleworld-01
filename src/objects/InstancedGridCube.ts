@@ -18,9 +18,7 @@ class InstancedGridCube extends SelectableInstancedMesh {
 
   #length;
   #width;
-  #defaultColor;
-  #selectedColor;
-  #hoverColor;
+  #depth;
   #transparency;
   #emissive;
   #metalness;
@@ -34,18 +32,20 @@ class InstancedGridCube extends SelectableInstancedMesh {
   constructor(
     length: number, 
     width: number,
+    depth: number,
     count: number,
     options: {
-      color?: number,
-      selectedColor?: number,
-      hoverColor?: number,
+      color?: Color,
+      selectedColor?: Color,
+      hoverColor?: Color,
       transparency?: number,
       selectable?: boolean,
       emissive?: number,
       metalness?: number,
-    }) {
+    },
+    createSelectionObjects?: boolean) {
 
-    const color = new Color(options.color) || new Color(0x828282);
+    const color = options.color || new Color(0xFFFFFF);
     const transparency = options.transparency || 1;
     const emissive = options.emissive || 0x203008;
     const metalness = options.metalness || 0.6;
@@ -62,7 +62,7 @@ class InstancedGridCube extends SelectableInstancedMesh {
 
     const extrudeSettings = {
       steps: 1,
-      depth: 1,
+      depth: depth,
       bevelEnabled: true,
       bevelThickness: 0.09,
       bevelSize: 0.05,
@@ -73,9 +73,9 @@ class InstancedGridCube extends SelectableInstancedMesh {
     const geometry = new ExtrudeGeometry(shape, extrudeSettings);
 
     const material = new MeshStandardMaterial({
-      transparent: true,
-      opacity: 1,
-      color: new Color(0xffffff),
+      transparent: transparency != 1,
+      opacity: transparency,
+      color: new Color(0xFFFFFF),  // later calls to setColorAt will multiply with this, so it must be white.
       emissive: new Color(emissive),
       roughness: 0,
       metalness: metalness,
@@ -84,14 +84,15 @@ class InstancedGridCube extends SelectableInstancedMesh {
       fog: false,
     });
 
-    super(geometry, material, count, options.selectable);
+    super(geometry, material, count, options.selectable, color, createSelectionObjects);
     this.instanceMatrix.setUsage(DynamicDrawUsage);
 
     this.#length = length;
     this.#width = width;
-    this.#defaultColor = color;
-    this.#selectedColor = new Color(options.selectedColor) || new Color(0x222222);
-    this.#hoverColor = new Color(options.hoverColor) || new Color(0x666666);
+    this.#depth = depth;
+    this.defaultColor = color;
+    this.selectedColor = options.selectedColor || color.multiply(new Color(0x444444));  
+    this.hoverColor = options.hoverColor || color.multiply(new Color(0x999999));
     this.#transparency = transparency;
     this.#emissive = emissive;
     this.#metalness = metalness;
@@ -104,6 +105,7 @@ class InstancedGridCube extends SelectableInstancedMesh {
 
   }
 
+  // Override
   raycast(raycaster: Raycaster, intersects: Intersection<Object3D<Object3DEventMap>>[]): void {
     const matrixWorld = this.matrixWorld;
 		const raycastTimes = this.count;
@@ -134,10 +136,15 @@ class InstancedGridCube extends SelectableInstancedMesh {
 
 			// process the result of raycast
 
+      // For our custom method, we add the SelectionObject to the intersect,
+      // instead of the instanceMesh itself. The SelectionObject holds the 
+      // information about which instances are actually selected.
       if (this.#_instanceIntersects.length > 0) {
         const intersect = this.#_instanceIntersects[0];
-				intersect.instanceId = instanceId;
-				intersect.object = this;
+				// intersect.instanceId = instanceId;
+
+        // @ts-expect-error push to object class
+				intersect.object = this.getSelectionObject(instanceId);
 				intersects.push( intersect );
       }
 
@@ -159,19 +166,20 @@ class InstancedGridCube extends SelectableInstancedMesh {
   }
 
   changeToSelectedAppearance(index: number) {
-    this.setColorAt(index, this.#selectedColor);
+    this.setColorAt(index, this.selectedColor);
+    // this.setColorAt(index, new Color(0x000000));
     // @ts-expect-error instanceColor will not be null
     this.instanceColor.needsUpdate = true;
   }
 
   changeToUnselectedAppearance(index: number) {
-    this.setColorAt(index, this.#defaultColor);
+    this.setColorAt(index, this.defaultColor);
     // @ts-expect-error instanceColor will not be null
     this.instanceColor.needsUpdate = true;
   }
 
   changeToHoverAppearance(index: number) {
-    this.setColorAt(index, this.#hoverColor);
+    this.setColorAt(index, this.hoverColor);
     // @ts-expect-error instanceColor will not be null
     this.instanceColor.needsUpdate = true;
   }

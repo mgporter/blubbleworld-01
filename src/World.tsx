@@ -4,11 +4,12 @@ import { MyFlyControls } from "./systems/MyFlyControls";
 import { WorldBuilder } from "./systems/WorldBuilder";
 import { SelectableMesh } from "./objects/SelectableMesh";
 import { SelectableInstancedMesh } from "./objects/SelectableInstancedMesh";
+import { Vector2, Vector3 } from "three";
 
 let flyControls: MyFlyControls;
 let worldBuilder: WorldBuilder;
 
-const cb = (things: SelectableMesh[] | SelectableInstancedMesh[]) => console.log(things);
+const cb = (things: Vector2[]) => console.log(things);
 
 export function World() {
 

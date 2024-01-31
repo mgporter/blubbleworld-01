@@ -100,7 +100,7 @@ class GridCube extends SelectableMesh {
     }
 
     this.changeToHoverAppearance = () => {
-      this. material.color.set(hoverColor);
+      this.material.color.set(hoverColor);
     }
 
   }
