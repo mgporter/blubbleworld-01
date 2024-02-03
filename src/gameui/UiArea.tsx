@@ -1,10 +1,13 @@
-export default function UiArea(props: React.PropsWithChildren) {
+interface UiAreaProps extends React.PropsWithChildren {
+  properties?: string;
+}
 
-  const alignSelfSetting = props.alignSelf == undefined ? "" : props.alignSelf;
+export default function UiArea({properties = "self-auto", children}: UiAreaProps) {
 
   return (
-    <div className={"flex flex-col pointer-events-auto bg-slate-800/50 text-white m-2 p-4 pointer-events-autod rounded-2xl " + alignSelfSetting}>
-      {props.children}
+    <div className={"flex flex-col bg-slate-800/50 " + 
+      "text-white p-4 pointer-events-auto rounded-2xl " + properties}>
+      {children}
     </div>
   )
 

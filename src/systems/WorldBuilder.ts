@@ -1,8 +1,8 @@
-import { AxesHelper, Camera, GridHelper, Raycaster, Scene, Vector2 } from "three";
+import { AxesHelper, Camera, GridHelper, Raycaster, Scene, Vector2, Vector3 } from "three";
 import { Lights } from "../objects/Lights";
 import { Board } from "./Board";
 import { MouseSelectRect } from "./MouseSelectRect";
-import { Selector } from "../types";
+import { Selectable, Selector } from "../types";
 
 class WorldBuilder {
 
@@ -36,14 +36,13 @@ class WorldBuilder {
 
   }
 
-  setAndEnableBoardSelector(type: "single" | "rectangle", callback: (selection: Vector2[]) => void) {
+  setAndEnableBoardSelector(type: "single" | "rectangle") {
     if (type === "rectangle") {
       this.#boardSelector = new MouseSelectRect(
         this.#camera, 
         this.#domElement, 
         this.#raycaster,
-        this.#board.getSelectables(), 
-        callback);
+        this.#board.getSelectables());
 
       this.enableSelector(this.#boardSelector);
 

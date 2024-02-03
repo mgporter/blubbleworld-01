@@ -1,23 +1,21 @@
 import { SelectableMesh } from "../objects/SelectableMesh";
 import { Selector } from "../types";
-import { MouseEvents } from "./MouseEvents";
-import { Camera, Raycaster, Vector2 } from "three";
+import { Intersection, MouseEvents } from "./MouseEvents";
+import { Camera, Mesh, Raycaster, Vector2, Vector3 } from "three";
 
 import { Selectable } from "../types";
 import { SelectableInstancedMesh } from "../objects/SelectableInstancedMesh";
+import { MouseEventEmitter } from "./EventEmitter";
 
 class MouseSelectRect extends MouseEvents implements Selector {
 
   #currentTarget: Selectable | null = null;
+  #mouseoverTarget: Selectable | null = null;
   #originOfSelection: Selectable | null = null;
   #inSelectionMode = false;
-  #callback;
 
   #_onClick;
-  #_onMouseenter;
   #_onMouseout;
-  #_onMousedown;
-  #_onMouseup;
   #_onMousemove;
 
   constructor(
@@ -25,16 +23,11 @@ class MouseSelectRect extends MouseEvents implements Selector {
     canvas: HTMLElement, 
     raycaster: Raycaster, 
     objects: SelectableMesh[] | SelectableInstancedMesh[],
-    callback: (selection: Vector2[]) => void) {
+  ) {
     super(camera, canvas, raycaster, objects);
 
-    this.#callback = callback;
-
     this.#_onClick = this.#onClick.bind(this);
-    this.#_onMouseenter = this.#onMouseenter.bind(this);
     this.#_onMouseout = this.#onMouseout.bind(this);
-    this.#_onMousedown = this.#onMousedown.bind(this);
-    this.#_onMouseup = this.#onMouseup.bind(this);
     this.#_onMousemove = this.#onMousemove.bind(this);
   }
 
@@ -51,21 +44,22 @@ class MouseSelectRect extends MouseEvents implements Selector {
   }
 
   #returnSelection() {
-    const selection: Vector2[] = [];
+    const selection: Selectable[] = [];
     
     this.getObjects().forEach(mesh => {
       if (this.#isInstancedMesh(mesh)) {
         mesh.getSelectionObjects()
           .filter(obj => obj.isSelectedOrHovered())
-          .forEach(obj => selection.push(new Vector2(obj.getCoordinates().x, obj.getCoordinates().y)));
+          .forEach(obj => selection.push(obj));
       } 
       else {
         if (mesh.isSelectedOrHovered()) 
-          selection.push(new Vector2(mesh.getCoordinates().x, mesh.getCoordinates().y));
+          selection.push(mesh);
       }
     })
 
-    this.#callback(selection);
+    MouseEventEmitter.dispatch("selectionFinished", selection)
+    // this.#callbackOnSelectionFinish(selection);
   }
 
   #onClick() {
@@ -98,10 +92,11 @@ class MouseSelectRect extends MouseEvents implements Selector {
       else meshObj.unselectAndUnhover();
     });
 
-    if (this.#currentTarget) this.#currentTarget.hover();
+    // if (this.#currentTarget) this.#currentTarget.hover();
 
     this.#originOfSelection = null;
     this.#currentTarget = null;
+    this.#mouseoverTarget = null;
     this.#inSelectionMode = false;
 
   }
@@ -109,10 +104,6 @@ class MouseSelectRect extends MouseEvents implements Selector {
   #isInstancedMesh(mesh: SelectableMesh | SelectableInstancedMesh): mesh is SelectableInstancedMesh {
     return (mesh as SelectableInstancedMesh).isInstancedMesh !== undefined;
   }
-
-  #onMousedown() {}
-
-  #onMouseup() {}
 
   #updateRectangleSelection(origin: Selectable, target: Selectable) {
 
@@ -158,43 +149,58 @@ class MouseSelectRect extends MouseEvents implements Selector {
     }
   }
 
-  #onMousemove(e: MouseEvent) {
-
-    const intersections = this.getIntersectedObject(e);
-
-    if (this.#originOfSelection) {  // If in selection mode
-
-      if (intersections.length > 0) {
-
-        this.#currentTarget = intersections[0].object;
-        this.#updateRectangleSelection(this.#originOfSelection, this.#currentTarget);     
-
-      } else {
-        this.#currentTarget = null;
-      }
-
-
-    } else {
-
-      if (intersections.length > 0 && intersections[0].object.isSelectable()) {
-        
-        if (intersections[0].object === this.#currentTarget) return;
-
-        if (this.#currentTarget) this.#currentTarget.unhover();
-        this.#currentTarget = intersections[0].object;
-        this.#currentTarget.hover();
-
-      } else {
-        if (this.#currentTarget) this.#currentTarget.unhover();
-        this.#currentTarget = null;
-      }
-
+  /** Checks whether the mouse is hovering over a mesh, and filters out
+   * repeated mouseover events on the same mesh. Also calls
+   * #callbackOnHover. Does NOT check if the mesh is currently selectable.
+  */
+  #getValidTarget(intersections: Intersection[]): Selectable | null {
+    if (intersections.length === 0) {
+      if (this.#currentTarget && !this.#inSelectionMode) 
+        this.#currentTarget.unselectAndUnhover();
+      this.#currentTarget = null;
+      this.#mouseoverTarget = null;
+      MouseEventEmitter.dispatch("hover", null);
+      return null;
     }
+
+    if (intersections[0].object === this.#mouseoverTarget) return null;
+
+    this.#mouseoverTarget = intersections[0].object;
+
+    MouseEventEmitter.dispatch("hover", this.#mouseoverTarget);
+
+    return this.#mouseoverTarget;
 
   }
 
-  #onMouseenter() {
-    
+  /** Handles the cases where the selection has started and not
+   * started, respectively.
+  */
+  #onMousemove(e: MouseEvent) {
+
+    const mouseoverTarget = this.#getValidTarget(this.getIntersectedObject(e));
+    if (mouseoverTarget === null) return;
+
+    if (this.#originOfSelection) {  // If in selection mode
+
+      this.#currentTarget = mouseoverTarget;
+      this.#updateRectangleSelection(this.#originOfSelection, this.#currentTarget);     
+
+    } else {
+
+      if (mouseoverTarget.isSelectable()) {
+
+        if (this.#currentTarget) this.#currentTarget.unhover();
+        this.#currentTarget = mouseoverTarget;
+        this.#currentTarget.hover();
+
+      } else {
+        this.#currentTarget?.unhover();
+        this.#currentTarget = null;
+      }
+        
+    }
+
   }
 
   #onMouseout() {

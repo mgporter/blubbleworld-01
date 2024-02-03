@@ -6,11 +6,16 @@ class SelectableMesh extends Mesh {
   #isSelected = false;
   #isHovered = false;
   #coordinates;
+  displayName = "SelectableMesh";
 
   constructor(geometry: BufferGeometry, material: Material, coordinates?: Vector3, selectable?: boolean) {
     super(geometry, material);
     this.#isSelectable = selectable == null ? true : selectable;
     this.#coordinates = coordinates ? coordinates : new Vector3();
+  }
+
+  getMesh() {
+    return this;
   }
 
   getCoordinates() {

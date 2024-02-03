@@ -2,12 +2,11 @@ import { useFrame, useThree } from "@react-three/fiber";
 import { useEffect } from "react"
 import { MyFlyControls } from "./systems/MyFlyControls";
 import { WorldBuilder } from "./systems/WorldBuilder";
-import { Vector2 } from "three";
+import { Vector2, Vector3 } from "three";
+import { Selectable } from "./types";
 
 let flyControls: MyFlyControls;
 let worldBuilder: WorldBuilder;
-
-const cb = (things: Vector2[]) => console.log(things);
 
 export function World() {
 
@@ -35,7 +34,7 @@ export function World() {
 
   useEffect(() => {
 
-    const rectSelector = worldBuilder.setAndEnableBoardSelector("rectangle", cb);
+    const rectSelector = worldBuilder.setAndEnableBoardSelector("rectangle");
 
     return () => {
       worldBuilder.disableSelector(rectSelector);

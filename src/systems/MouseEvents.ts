@@ -7,6 +7,8 @@ import { Selectable } from "../types";
 import { SelectableMesh } from "../objects/SelectableMesh";
 import { SelectableInstancedMesh } from "../objects/SelectableInstancedMesh";
 
+export type Intersection = {object: Selectable};
+
 class MouseEvents {
 
   #camera;
@@ -37,7 +39,7 @@ class MouseEvents {
 
   getIntersectedObject(e: MouseEvent) {
     this.#raycaster.setFromCamera(this.#getPointerCoordinates(e), this.#camera);
-    return (this.#raycaster.intersectObjects(this.#objects, false) as unknown) as {object: Selectable}[];
+    return (this.#raycaster.intersectObjects(this.#objects, false) as unknown) as Intersection[];
   }
 
   #getPointerCoordinates(e: MouseEvent) {

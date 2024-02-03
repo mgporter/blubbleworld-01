@@ -14,6 +14,8 @@ class SelectableInstancedMesh extends InstancedMesh {
   selectedColor = new Color(0x999999);
   hoverColor = new Color(0x444444);
 
+  displayName = "SelectableInstanceMesh";
+
   constructor(
     geometry: BufferGeometry,
     material: Material,
@@ -87,8 +89,12 @@ class SelectableInstancedMesh extends InstancedMesh {
   }
 
   // Hooks to implement later
+
+  //eslint-disable-next-line
   changeToDefaultAppearance(index: number) {}
+  //eslint-disable-next-line
   changeToHoverAppearance(index: number) {}
+  //eslint-disable-next-line
   changeToSelectedAppearance(index: number) {}
 
 }

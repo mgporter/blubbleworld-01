@@ -14,6 +14,9 @@ class InstancedPondCube extends InstancedGridCube {
     }
 
     super(length || 1, width || 1, depth || 0.8, count, options);
+
+    this.name = "InstancedPondCube";
+    this.displayName = "Water";
   }
 
 }

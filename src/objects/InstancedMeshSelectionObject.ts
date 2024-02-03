@@ -1,4 +1,5 @@
-import { Vector3 } from "three";
+import { Color, InstancedMesh, Matrix4, Vector3 } from "three";
+import { SelectableInstancedMesh } from "./SelectableInstancedMesh";
 
 class InstancedMeshSelectionObject {
 
@@ -7,12 +8,12 @@ class InstancedMeshSelectionObject {
   #isHovered = false;
   #index;
   #coordinates = new Vector3();
-  #instancedMeshRef;
+  #instancedMeshRef: SelectableInstancedMesh;
 
   constructor(
     isSelectable: boolean, 
     index: number,
-    instancedMeshRef: object,
+    instancedMeshRef: SelectableInstancedMesh,
     changeToSelectedAppearance: (idx: number) => void,
     changeToDefaultAppearance: (idx: number) => void,
     changeToHoverAppearance: (idx: number) => void) {
@@ -26,7 +27,7 @@ class InstancedMeshSelectionObject {
 
   }
 
-  getInstancedMesh() {
+  getMesh() {
     return this.#instancedMeshRef;
   }
 
@@ -34,8 +35,16 @@ class InstancedMeshSelectionObject {
     return this.#coordinates;
   }
 
-  setCoordinates(coordinates: Vector3) {
-    this.#coordinates = coordinates;
+  setCoordinates(input: Vector3 | Matrix4) {
+    if ((input as Vector3).isVector3 != undefined) {
+      this.#coordinates = input as Vector3;
+    } else {
+      this.#coordinates = new Vector3().setFromMatrixPosition(input as Matrix4);
+    }
+  }
+
+  updateCoordinates() {
+    
   }
 
   isSelectable() {
