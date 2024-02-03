@@ -16,7 +16,8 @@ class InstancedMeshSelectionObject {
     instancedMeshRef: SelectableInstancedMesh,
     changeToSelectedAppearance: (idx: number) => void,
     changeToDefaultAppearance: (idx: number) => void,
-    changeToHoverAppearance: (idx: number) => void) {
+    changeToHoverAppearance: (idx: number) => void,
+    changeToRejectedAppearance: (idx: number) => void) {
 
     this.#isSelectable = isSelectable;
     this.#index = index;
@@ -24,6 +25,7 @@ class InstancedMeshSelectionObject {
     this.changeToSelectedAppearance = changeToSelectedAppearance;
     this.changeToDefaultAppearance = changeToDefaultAppearance;
     this.changeToHoverAppearance = changeToHoverAppearance;
+    this.changeToRejectedAppearance = changeToRejectedAppearance;
 
   }
 
@@ -97,10 +99,11 @@ class InstancedMeshSelectionObject {
     }
   }
 
-  hover() {
+  hover(rejected?: boolean) {
     if (!this.#isSelectable || this.#isHovered) return;
     this.#isHovered = true;
-    this.changeToHoverAppearance(this.#index);
+    if (rejected) this.changeToRejectedAppearance(this.#index);
+    else this.changeToHoverAppearance(this.#index);
   }
 
   /** 
@@ -126,10 +129,15 @@ class InstancedMeshSelectionObject {
 
 
 
-  // Hooks to implement later
+  // Hooks to be overridden by the superclass
+  //eslint-disable-next-line
   changeToDefaultAppearance(index: number) {}
+  //eslint-disable-next-line
   changeToHoverAppearance(index: number) {}
+  //eslint-disable-next-line
   changeToSelectedAppearance(index: number) {}
+  //eslint-disable-next-line
+  changeToRejectedAppearance(index: number) {}
 
 }
 

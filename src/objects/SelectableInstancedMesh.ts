@@ -13,6 +13,7 @@ class SelectableInstancedMesh extends InstancedMesh {
   defaultColor = new Color(0xffffff);
   selectedColor = new Color(0x999999);
   hoverColor = new Color(0x444444);
+  rejectedColor = new Color(0xff0000);
 
   displayName = "SelectableInstanceMesh";
 
@@ -41,6 +42,7 @@ class SelectableInstancedMesh extends InstancedMesh {
           this.changeToSelectedAppearance.bind(this),
           this.changeToDefaultAppearance.bind(this),
           this.changeToHoverAppearance.bind(this),
+          this.changeToRejectedAppearance.bind(this),
         )
       });
 
@@ -96,6 +98,8 @@ class SelectableInstancedMesh extends InstancedMesh {
   changeToHoverAppearance(index: number) {}
   //eslint-disable-next-line
   changeToSelectedAppearance(index: number) {}
+  //eslint-disable-next-line
+  changeToRejectedAppearance(index: number) {}
 
 }
 

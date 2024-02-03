@@ -1,7 +1,7 @@
 import { SelectableMesh } from "../objects/SelectableMesh";
 import { Selector } from "../types";
 import { Intersection, MouseEvents } from "./MouseEvents";
-import { Camera, Mesh, Raycaster, Vector2, Vector3 } from "three";
+import { Camera, Color, Mesh, Raycaster, Vector2, Vector3 } from "three";
 
 import { Selectable } from "../types";
 import { SelectableInstancedMesh } from "../objects/SelectableInstancedMesh";
@@ -13,6 +13,7 @@ class MouseSelectRect extends MouseEvents implements Selector {
   #mouseoverTarget: Selectable | null = null;
   #originOfSelection: Selectable | null = null;
   #inSelectionMode = false;
+  #selectionIsValid = true;
 
   #_onClick;
   #_onMouseout;
@@ -126,14 +127,53 @@ class MouseSelectRect extends MouseEvents implements Selector {
       minZ = targetZ; maxZ = originZ;
     }
 
+    // Divide selectables into those inside the rectangle, and those outside.
+    const insideRect: Selectable[] = [];
+    const outsideRect: Selectable[] = [];
+
     this.getObjects().forEach(x => {
+      
       if (this.#isInstancedMesh(x)) {
-        x.getSelectionObjects().forEach(obj => this.#addSelectionRectangle(obj, minX, maxX, minZ, maxZ));
+        x.getSelectionObjects().forEach(obj => {
+          if (!obj.isSelectable()) return;
+          if (this.#inBounds(obj, minX, maxX, minZ, maxZ)) insideRect.push(obj);
+          else outsideRect.push(obj);
+        });
       } else {
         this.#addSelectionRectangle(x, minX, maxX, minZ, maxZ);
       }
-    });
+    })
 
+    const itemsInLargestRectangle = 
+      (Math.abs((maxX - minX)) + 1) * (Math.abs((maxZ - minZ)) + 1);
+
+    //If a perfect rectangle is not selected
+    if (insideRect.length < itemsInLargestRectangle && insideRect.length > 0) {
+      this.#addRectSelectionEffect(false, insideRect, outsideRect);
+    } else {
+      this.#addRectSelectionEffect(true, insideRect, outsideRect);
+    }
+
+
+
+    // Old code
+    // this.getObjects().forEach(x => {
+    //   if (this.#isInstancedMesh(x)) {
+    //     x.getSelectionObjects().forEach(obj => this.#addSelectionRectangle(obj, minX, maxX, minZ, maxZ));
+    //   } else {
+    //     this.#addSelectionRectangle(x, minX, maxX, minZ, maxZ);
+    //   }
+    // });
+
+  }
+
+  #addRectSelectionEffect(isValid: boolean, inside: Selectable[], outside: Selectable[]) {
+    // Return early if there is no change in validity
+    if (isValid != this.#selectionIsValid) inside.forEach(x => x.unhover());
+    this.#selectionIsValid = isValid;
+    
+    inside.forEach(x => x.hover(!isValid));
+    outside.forEach(x => x.unhover());
   }
 
   #inBounds(obj: Selectable, minX: number, maxX: number, minZ: number, maxZ: number) {

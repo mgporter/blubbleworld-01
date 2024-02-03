@@ -1,4 +1,4 @@
-import { BufferGeometry, Material, Mesh, Vector3 } from "three";
+import { BufferGeometry, Color, Material, Mesh, Vector3 } from "three";
 
 class SelectableMesh extends Mesh {
 
@@ -7,6 +7,11 @@ class SelectableMesh extends Mesh {
   #isHovered = false;
   #coordinates;
   displayName = "SelectableMesh";
+
+  defaultColor = new Color(0xffffff);
+  selectedColor = new Color(0x999999);
+  hoverColor = new Color(0x444444);
+  rejectedColor = new Color(0xff0000);
 
   constructor(geometry: BufferGeometry, material: Material, coordinates?: Vector3, selectable?: boolean) {
     super(geometry, material);
@@ -72,10 +77,12 @@ class SelectableMesh extends Mesh {
     }
   }
 
-  hover() {
+  hover(rejected?: boolean) {
     if (!this.#isSelectable || this.#isHovered) return;
     this.#isHovered = true;
-    this.changeToHoverAppearance();
+    rejected === true ?
+      this.changeToRejectedAppearance() :  
+      this.changeToHoverAppearance();
   }
 
   /** 
@@ -98,10 +105,11 @@ class SelectableMesh extends Mesh {
     this.changeToDefaultAppearance();
   }
 
-  // Hooks to implement later
+  // Hooks to be overridden by the superclass
   changeToDefaultAppearance() {}
   changeToHoverAppearance() {}
   changeToSelectedAppearance() {}
+  changeToRejectedAppearance() {}
 
 }
 

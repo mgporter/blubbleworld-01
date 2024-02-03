@@ -36,7 +36,8 @@ export default function BuildMenu() {
     <motion.div className="m-2 flex flex-col bg-slate-800/50 min-h-28 min-w-24
       text-white p-4 pointer-events-auto rounded-2xl"
       animate={{width: menuWidth, height: menuHeight}} transition={{type: "just"}}
-      layoutId="buildMenuOpenCloseAction">
+      layoutId="buildMenuOpenCloseAction"
+      initial={false}>
 
       <div className="border-2 rounded-xl border-gray-700 border-solid size-18 p-2 self-start
         bg-slate-700 hover:bg-slate-200 active:bg-white transition-colors duration-100 cursor-pointer
@@ -46,7 +47,8 @@ export default function BuildMenu() {
       </div>
       
       <motion.div layoutId="buildMenuOpenCloseAction"
-        animate={{opacity: itemsOpacity, transition: {delay: itemsDelay, type: "tween", duration: itemsDuration}}}>
+        animate={{opacity: itemsOpacity, transition: {delay: itemsDelay, type: "tween", duration: itemsDuration}}}
+        initial={false}>
         <h1 className='text-2xl mb-2'>Select a building</h1>
         <ul>
           <li><NavSelectionOption img={houseIcon} mainText="House" subText="$6" /></li>

@@ -38,6 +38,7 @@ class InstancedGridCube extends SelectableInstancedMesh {
       color?: Color,
       selectedColor?: Color,
       hoverColor?: Color,
+      rejectedColor?: Color,
       transparency?: number,
       selectable?: boolean,
       emissive?: number,
@@ -91,8 +92,9 @@ class InstancedGridCube extends SelectableInstancedMesh {
     this.#width = width;
     this.#depth = depth;
     this.defaultColor = color;
-    this.selectedColor = options.selectedColor || color.multiply(new Color(0x444444));  
-    this.hoverColor = options.hoverColor || color.multiply(new Color(0x999999));
+    this.selectedColor = options.selectedColor || new Color(color).multiply(new Color(0x444444));  
+    this.hoverColor = options.hoverColor || new Color(color).multiply(new Color(0x999999));
+    this.rejectedColor = options.rejectedColor || new Color(color).multiply(new Color(0xff0000));
     this.#transparency = transparency;
     this.#emissive = emissive;
     this.#metalness = metalness;
@@ -180,6 +182,13 @@ class InstancedGridCube extends SelectableInstancedMesh {
 
   changeToHoverAppearance(index: number) {
     this.setColorAt(index, this.hoverColor);
+    // @ts-expect-error instanceColor will not be null
+    this.instanceColor.needsUpdate = true;
+  }
+
+  changeToRejectedAppearance(index: number) {
+    console.log("rejected " + this.rejectedColor)
+    this.setColorAt(index, this.rejectedColor);
     // @ts-expect-error instanceColor will not be null
     this.instanceColor.needsUpdate = true;
   }

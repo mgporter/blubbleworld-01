@@ -9,6 +9,7 @@ class InstancedGrassCube extends InstancedGridCube {
       color: new Color(0x2fcc00),
       selectedColor: new Color(0x2fcc00).multiplyScalar(0.2),
       hoverColor: new Color(0x2fcc00).multiplyScalar(0.5),
+      rejectedColor: new Color(0xcc6a00),
       transparency: 1,
       selectable: true,
     }

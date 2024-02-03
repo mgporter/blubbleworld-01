@@ -95,7 +95,7 @@ class GridCube extends SelectableMesh {
       this.material.color.set(selectedColor);
     }
 
-    this.changeToUnselectedAppearance = () => {
+    this.changeToDefaultAppearance = () => {
       this.material.color.set(this.#color);
     }
 
