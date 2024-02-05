@@ -1,4 +1,4 @@
-import { Selectable } from "../types";
+import { FinishSelectionObject, Selectable } from "../types";
 
 // The record is: Record<EventNames, TypeOfDataToBeDispatched>
 
@@ -6,7 +6,7 @@ import { Selectable } from "../types";
 type EventMap = Record<string, any>;
 
 type MouseEventList = "hover" | "selectionStart" | "selectionFinished";
-type MouseEventMap = Record<MouseEventList, Selectable | Selectable[] | null>;
+type MouseEventMap = Record<MouseEventList, FinishSelectionObject>;
 
 // type EventKey<T extends MouseEventMap> = keyof T;
 // type EventReceiver<T> = (params: T) => void;

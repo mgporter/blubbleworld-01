@@ -2,8 +2,8 @@ import { useFrame, useThree } from "@react-three/fiber";
 import { useEffect } from "react"
 import { MyFlyControls } from "./systems/MyFlyControls";
 import { WorldBuilder } from "./systems/WorldBuilder";
-import { Vector2, Vector3 } from "three";
-import { Selectable } from "./types";
+import { C, Globals } from "./Constants";
+import { MouseEventHandler, RectangleSelector } from "./systems/MouseSelectRect";
 
 let flyControls: MyFlyControls;
 let worldBuilder: WorldBuilder;
@@ -13,14 +13,17 @@ export function World() {
   const { camera, scene, gl, raycaster } = useThree();
 
   useEffect(() => {
+    Globals.camera = camera;
+    Globals.scene = scene;
+    Globals.domCanvas = gl.domElement;
+    Globals.raycaster = raycaster;
+  }, [camera, scene, gl, raycaster]); 
 
-    worldBuilder = new WorldBuilder(camera, scene, gl.domElement, raycaster);
+  useEffect(() => {
 
-    flyControls = new MyFlyControls(
-      camera, 
-      gl.domElement, 
-      {length: worldBuilder.zSize, width: worldBuilder.xSize}
-    );
+    worldBuilder = new WorldBuilder();
+
+    flyControls = new MyFlyControls();
 
     return () => {
       flyControls.dispose();
@@ -34,10 +37,12 @@ export function World() {
 
   useEffect(() => {
 
-    const rectSelector = worldBuilder.setAndEnableBoardSelector("rectangle");
+    const rectSelector = new MouseEventHandler(
+      worldBuilder.getBoardObjects(), 
+      new RectangleSelector(true, 12, 12));
 
     return () => {
-      worldBuilder.disableSelector(rectSelector);
+      rectSelector.dispose();
     }
 
   }, []);

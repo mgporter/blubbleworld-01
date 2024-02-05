@@ -12,6 +12,7 @@
   "dependencies": {
     "@react-three/fiber": "^8.15.15",
     "framer-motion": "^11.0.3",
+    "heap-js": "^2.3.0",
     "localforage": "^1.10.0",
     "match-sorter": "^6.3.3",
     "react": "^18.2.0",

@@ -1,6 +1,5 @@
 import { LineBasicMaterial, 
   LineDashedMaterial, 
-  Mesh, 
   MeshBasicMaterial, 
   MeshLambertMaterial, 
   MeshMatcapMaterial, 
@@ -8,7 +7,6 @@ import { LineBasicMaterial,
   MeshPhysicalMaterial, 
   MeshStandardMaterial, 
   MeshToonMaterial, 
-  Object3D, 
   PointsMaterial, 
   ShadowMaterial, 
   SpriteMaterial } from "three";
@@ -29,27 +27,47 @@ export type ColoredMaterial =
   ShadowMaterial |
   SpriteMaterial;
 
-// export interface Selectable {
-//   isSelectable: () => boolean;
-//   setSelectable: (val: boolean) => void;
-//   isSelected: () => boolean;
-//   select: () => void;
-//   unselect: () => void;
-//   toggleSelect: () => void;
-// }
-
-// export interface SelectableInstance {
-//   isSelectable: (idx: number) => boolean;
-//   setSelectable: (idx: number, val: boolean) => void;
-//   isSelected: (idx: number) => boolean;
-//   select: (idx: number) => void;
-//   unselect: (idx: number) => void;
-//   toggleSelect: (idx: number) => void;
-// }
-
 export type Selectable = SelectableMesh | InstancedMeshSelectionObject;
 
+type FinishSelectionData = {
+  minX: number,
+  maxX: number,
+  minY: number,
+  maxY: number,
+  lengthX: number,
+  lengthY: number,
+  totalArea: number,
+  validCount: number,
+}
+
+export type FinishSelectionObject = {
+  objects: Selectable[] | null,
+  target: Selectable | null,
+  data?: FinishSelectionData,
+}
+
 export interface Selector {
-  enable: () => void;
-  dispose: () => void;
+  handleMouseOverTarget: (target: Selectable) => void;
+  handleMouseLeaveTarget: (target: Selectable) => void;
+  handleSelectionFinished: (target: Selectable) => FinishSelectionObject;
+  isSelectionValid: boolean
+}
+
+export interface SinglePhaseSelector extends Selector {
+
+}
+
+export interface TwoPhaseSelector extends Selector {
+  handleFirstClick: (target: Selectable) => void;
+  handleSelectionMode: (origin: Selectable, target: Selectable) => void;
+}
+
+type noiseLevel = Record<"OFF" | "LIGHT" | "MEDIUM" | "HEAVY" | "VERYHEAVY", number>;
+
+export const noiseLevel: noiseLevel = {
+  OFF: 1000,
+  LIGHT: 50,
+  MEDIUM: 8,
+  HEAVY: 4,
+  VERYHEAVY: 1,
 }

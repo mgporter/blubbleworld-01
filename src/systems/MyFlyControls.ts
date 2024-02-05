@@ -5,6 +5,8 @@ import {
   Camera
 } from 'three';
 
+import { C, Globals } from '../Constants';
+
 const _changeEvent = { type: 'change' };
 
 let _contextmenu: (e: Event) => void;
@@ -31,8 +33,7 @@ class MyFlyControls extends EventDispatcher {
   moveRightKey = "KeyD";
 
   #camera;
-  #enableLimits = true;
-  #worldSize;
+  #enableLimits;
   #moveLimits;
   #domElement;
   #tmpQuaternion;
@@ -45,22 +46,19 @@ class MyFlyControls extends EventDispatcher {
   #lastPosition;
   #EPS;
 
-	constructor(
-    camera: Camera, 
-    domElement: HTMLElement | Document, 
-    worldSize: {length: number, width: number}) {
+	constructor() {
 
 		super();
 
-		this.#camera = camera;
-		this.#domElement = domElement;
-    this.#worldSize = worldSize;
+    this.#enableLimits = C.enableCameraLimits;
+		this.#camera = Globals.camera;
+		this.#domElement = Globals.domCanvas;
 
     // MIN: DOWN, HEIGHTMIN, LEFT
     // MAX: UP, HEIGHTMAX, RIGHT
     this.#moveLimits = {
       MIN: new Vector3(-16, 2, -1),
-      MAX: new Vector3(this.#worldSize.width-7, 18, this.#worldSize.length+4)
+      MAX: new Vector3(C.worldsizeY - 7, 18, C.worldsizeX + 4)
     }
 
 		this.enabled = true;
@@ -384,14 +382,6 @@ class MyFlyControls extends EventDispatcher {
     window.removeEventListener( 'keydown', _keydown );
     window.removeEventListener( 'keyup', _keyup );
 
-  }
-
-  enableLimits() {
-    this.#enableLimits = true;
-  }
-
-  disableLimits() {
-    this.#enableLimits = false;
   }
 
 }

@@ -6,8 +6,10 @@ import { InstancedPondCube } from "../objects/InstancedPondCube";
 import { InstancedFoundationCube } from "../objects/InstancedFoundationCube";
 import { InstancedMountainCube } from "../objects/InstancedMountainCube";
 
+import { C, Globals } from "../Constants";
 
 type TerrainCounts = {
+  TOTAL: number,
   POND: number,
   GRASS: number,
   MOUNTAIN: number,
@@ -20,27 +22,54 @@ class Board {
   #pondThreshold;
   #mountainThreshold;
   #selectables: SelectableInstancedMesh[];
+  #boardX;
+  #boardY;
+  #cubeCounts: TerrainCounts;
+  #scene;
 
-  constructor(zSize: number, xSize: number, pondPercent: number, mountainPercent: number) {
+  constructor(worldsizeX: number, worldsizeY: number, pondPercent: number, mountainPercent: number, seed?: number) {
 
-    this.#noiseMaker = new NoiseMaker(zSize, xSize);
+    this.#scene = Globals.scene || new Scene();
+
+    this.#noiseMaker = new NoiseMaker(worldsizeX, worldsizeY);
+    if (seed) this.#noiseMaker.setSeed(seed);
     this.#perlinGrid = this.#noiseMaker.generatePerlinGrid();
     this.#selectables = [];
     this.#pondThreshold = this.#noiseMaker.getNumberAtPercentile(pondPercent);
     this.#mountainThreshold = this.#noiseMaker.getNumberAtPercentile(mountainPercent);
+    this.#boardX = worldsizeX;
+    this.#boardY = worldsizeY;
+
+    // Create cube counts
+    if ((pondPercent + mountainPercent) > 100) 
+      throw new Error("Pond and mountain values cannot exceed 100%");
+
+    const totalCubes = worldsizeX * worldsizeY;
+    const pondCubes = Math.round(totalCubes * (pondPercent / 100));
+    const mountainCubes = Math.round(totalCubes * (mountainPercent / 100));
+    const grassCubes = totalCubes - (pondCubes + mountainCubes);
+
+    this.#cubeCounts = {
+      TOTAL: totalCubes,
+      POND: pondCubes,
+      GRASS: grassCubes,
+      MOUNTAIN: mountainCubes,
+    }
 
   }
 
-  addBoardToScene(scene: Scene) {
+  addBoardToScene() {
 
     const length = this.#perlinGrid.length;
     const width = this.#perlinGrid[0].length;
 
-    const cubeCounts = this.makeCubeCount();
+    // const cubeCounts = this.makeCubeCount();
+    const [pondBreakpoint, grassBreakpoint] = 
+      this.#noiseMaker.getBreakPoints(this.#cubeCounts.POND, this.#cubeCounts.GRASS);
     
-    const instancedGrassCube = new InstancedGrassCube(cubeCounts.GRASS);
-    const instancedPondCube = new InstancedPondCube(cubeCounts.POND);
-    const instancedMountainCube = new InstancedMountainCube(cubeCounts.MOUNTAIN);
+    const instancedGrassCube = new InstancedGrassCube(this.#cubeCounts.GRASS);
+    const instancedPondCube = new InstancedPondCube(this.#cubeCounts.POND);
+    const instancedMountainCube = new InstancedMountainCube(this.#cubeCounts.MOUNTAIN);
     const instancedFoundationCube = new InstancedFoundationCube((length * 2) + ((width - 2) * 2));
 
     const matrix = new Matrix4();
@@ -56,24 +85,26 @@ class Board {
         matrix.setPosition(-i, -j, 0);
         const perlinValue = this.#perlinGrid[i][j];
 
-        if (perlinValue <= this.#pondThreshold) {
+        if (perlinValue < pondBreakpoint && pondCubeCount < this.#cubeCounts.POND) {
           // Create pond instance
           instancedPondCube.setMatrixAt(pondCubeCount, matrix);
           instancedPondCube.setCoordinates(pondCubeCount, new Vector3(-i, -j, 0));
           pondCubeCount++;
         } 
-        else if (perlinValue <= this.#mountainThreshold) {
+        else if (perlinValue < grassBreakpoint && grassCubeCount < this.#cubeCounts.GRASS) {
           // Create Grass instance
           instancedGrassCube.setMatrixAt(grassCubeCount, matrix);
           instancedGrassCube.setCoordinates(grassCubeCount, new Vector3(-i, -j, 0));
           grassCubeCount++;
         } 
-        else {
+        else if (mountainCubeCount < this.#cubeCounts.MOUNTAIN) {
           // Create Mountain instance
           const matrixCopy = matrix.clone();
           
-          const ratio = (perlinValue - this.#mountainThreshold) / (this.#noiseMaker.getMax() - this.#mountainThreshold);
-          matrixCopy.scale(new Vector3(1, 1, (ratio * 0.3) + 1));
+          const ratio = (perlinValue - grassBreakpoint) / (this.#noiseMaker.getMax() - grassBreakpoint);
+          const scaleFactor = Math.max((ratio * C.mountainHeightMultiplier) + 1, 1.1);
+
+          matrixCopy.scale(new Vector3(1, 1, scaleFactor));
           instancedMountainCube.setMatrixAt(mountainCubeCount, matrixCopy);
           instancedMountainCube.setCoordinates(mountainCubeCount, new Vector3(-i, -j, 0));
           
@@ -87,35 +118,35 @@ class Board {
             matrix.setPosition(-i, -j, -1);
             instancedFoundationCube.setMatrixAt(foundationCubeCount++, matrix);
         }
-
       }
     }
 
-    scene.add(instancedGrassCube, instancedPondCube, instancedFoundationCube, instancedMountainCube);
+    this.#scene.add(instancedGrassCube, instancedPondCube, instancedFoundationCube, instancedMountainCube);
     this.#selectables.push(instancedGrassCube);
     this.#selectables.push(instancedPondCube);
     this.#selectables.push(instancedMountainCube);
     
   }
 
-  makeCubeCount(): TerrainCounts {
-    const counts = {
-      POND: 0,
-      GRASS: 0,
-      MOUNTAIN: 0,
-    }
+  // makeCubeCount(): TerrainCounts {
 
-    this.#perlinGrid.forEach(row => {
-      row.reduce((acc, cur) => {
-        if (cur <= this.#pondThreshold) acc.POND++;
-        else if (cur <= this.#mountainThreshold) acc.GRASS++;
-        else acc.MOUNTAIN++;
-        return acc;
-      }, counts)
-    });
+  //   const counts = {
+  //     POND: 0,
+  //     GRASS: 0,
+  //     MOUNTAIN: 0,
+  //   }
 
-    return counts;
-  }
+  //   this.#perlinGrid.forEach(row => {
+  //     row.reduce((acc, cur) => {
+  //       if (cur <= this.#pondThreshold) acc.POND++;
+  //       else if (cur <= this.#mountainThreshold) acc.GRASS++;
+  //       else acc.MOUNTAIN++;
+  //       return acc;
+  //     }, counts)
+  //   });
+
+  //   return counts;
+  // }
 
   getSelectables() {
     return this.#selectables;

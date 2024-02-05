@@ -187,7 +187,6 @@ class InstancedGridCube extends SelectableInstancedMesh {
   }
 
   changeToRejectedAppearance(index: number) {
-    console.log("rejected " + this.rejectedColor)
     this.setColorAt(index, this.rejectedColor);
     // @ts-expect-error instanceColor will not be null
     this.instanceColor.needsUpdate = true;

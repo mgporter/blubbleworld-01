@@ -1,21 +1,22 @@
-import UiArea from "./UiArea"
 import NavSelectionOption from "./NavSelectionOption"
-
 import buildBuildingIcon from '../images/Building-simple_house_256.png';
-import houseIcon from '../images/Building-house_icon_256.png';
-import hotelIcon from '../images/Building-hotel_icon_256.png';
-import tentIcon from '../images/Building-tent_icon_256.png';
-import skyscraperIcon from '../images/Building-skyscraper_icon_256.png';
-import IconContainer from "./IconContainer";
-import { useState } from "react";
 
+import { useState } from "react";
+import { Buildables } from "../Buildables";
 import { motion } from "framer-motion";
 
 export default function BuildMenu() {
 
   const [showMenu, setShowMenu] = useState(false);
 
-  let menuWidth, menuHeight, itemsOpacity, itemsDelay, itemsDuration;
+  let menuWidth, menuHeight, itemsOpacity, itemsDelay, itemsDuration, itemsPointerEvents;
+
+  const buildings = [
+    Buildables.house,
+    Buildables.hotel,
+    Buildables.tent,
+    Buildables.skyscraper
+  ]
 
   if (showMenu) {
     menuWidth = "17rem";
@@ -23,12 +24,14 @@ export default function BuildMenu() {
     itemsOpacity = 1;
     itemsDelay = 0.24;
     itemsDuration = 0.2;
+    itemsPointerEvents = "pointer-events-auto";
   } else {
     menuWidth = "7rem";
     menuHeight = "10%";
     itemsOpacity = 0;
     itemsDelay = 0  
     itemsDuration = 0.05;
+    itemsPointerEvents = "pointer-events-none";
   }
 
   return (
@@ -48,13 +51,13 @@ export default function BuildMenu() {
       
       <motion.div layoutId="buildMenuOpenCloseAction"
         animate={{opacity: itemsOpacity, transition: {delay: itemsDelay, type: "tween", duration: itemsDuration}}}
-        initial={false}>
+        initial={false}
+        className={itemsPointerEvents}>
         <h1 className='text-2xl mb-2'>Select a building</h1>
         <ul>
-          <li><NavSelectionOption img={houseIcon} mainText="House" subText="$6" /></li>
-          <li><NavSelectionOption img={hotelIcon} mainText="Hotel" subText="$40" /></li>
-          <li><NavSelectionOption img={tentIcon} mainText="Tent" subText="$12" /></li>
-          <li><NavSelectionOption img={skyscraperIcon} mainText="Skyscraper" subText="$100" /></li>
+          {buildings.map((b) => (
+            <li><NavSelectionOption img={b.icon} mainText={b.displayName} subText={`$${b.price}`} /></li>
+          ))}
         </ul>
       </motion.div>
 

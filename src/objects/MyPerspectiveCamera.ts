@@ -6,7 +6,7 @@ class MyPerspectiveCamera extends PerspectiveCamera {
     super(fov, aspect, near, far);
 
     // Position: (DOWN, UP, RIGHT)
-    this.position.set(-9,10,10);
+    this.position.set(-9, 10, 10);
     this.rotation.order = "YZX";
 
     // Rotation: (pointing up, pointing left, rotate in direction of view)

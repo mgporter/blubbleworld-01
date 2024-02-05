@@ -1,63 +1,41 @@
-import { AxesHelper, Camera, GridHelper, Raycaster, Scene, Vector2, Vector3 } from "three";
+import { AxesHelper, GridHelper, Scene } from "three";
 import { Lights } from "../objects/Lights";
 import { Board } from "./Board";
-import { MouseSelectRect } from "./MouseSelectRect";
-import { Selectable, Selector } from "../types";
+import { Selector } from "../types";
+import { C } from "../Constants";
+import { Globals } from "../Constants";
 
 class WorldBuilder {
 
-  zSize = 18;   // Left to Right dimension
-  xSize = 12;   // Top to Bottom dimension
-  pondPercent = 30;   // tiles below this percent are pond
-  mountainPercent = 70;   // tiles above this percent are mountain
+  worldsizeX;   
+  worldsizeY;   
+  pondPercent;   
+  mountainPercent;
 
-  #camera;
-  #scene;
-  #domElement;
-  #raycaster;
   
   #board;
   #boardSelector: Selector | null;
 
-  constructor(camera: Camera, scene: Scene, domElement: HTMLElement, raycaster: Raycaster) {
+  #scene;
 
-    this.#camera = camera;
-    this.#scene = scene;
-    this.#domElement = domElement;
-    this.#raycaster = raycaster;
+  constructor() {
+
     this.#boardSelector = null;
+
+    this.worldsizeX = C.worldsizeX;
+    this.worldsizeY = C.worldsizeY;
+    this.pondPercent = C.pondPercent;
+    this.mountainPercent = C.mountainPercent;
+
+    this.#scene = Globals.scene || new Scene();
 
     const directionalLight = Lights.createDirectionalLight();
     const ambientLight = Lights.createAmbientLight();
     this.#scene.add(directionalLight, ambientLight);
 
-    this.#board = new Board(this.zSize, this.xSize, this.pondPercent, this.mountainPercent);
-    this.#board.addBoardToScene(this.#scene);
+    this.#board = new Board(C.worldsizeX, C.worldsizeY, this.pondPercent, this.mountainPercent);
+    this.#board.addBoardToScene();
 
-  }
-
-  setAndEnableBoardSelector(type: "single" | "rectangle") {
-    if (type === "rectangle") {
-      this.#boardSelector = new MouseSelectRect(
-        this.#camera, 
-        this.#domElement, 
-        this.#raycaster,
-        this.#board.getSelectables());
-
-      this.enableSelector(this.#boardSelector);
-
-      return this.#boardSelector;
-    } else {
-      throw new Error();
-    }
-  }
-
-  enableSelector(selector: Selector) {
-    selector.enable();
-  }
-
-  disableSelector(selector: Selector) {
-    selector.dispose();
   }
 
   addHelperObjects() {
@@ -65,6 +43,10 @@ class WorldBuilder {
       new AxesHelper(5),
       new GridHelper(10, 10)
     );
+  }
+
+  getBoardObjects() {
+    return this.#board.getSelectables();
   }
 
   clearWorld() {

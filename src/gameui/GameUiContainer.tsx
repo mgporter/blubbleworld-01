@@ -13,7 +13,7 @@ export default function GameUiContainer() {
 
       <div className="relative h-full w-full flex flex-col justify-between">
 
-        {/* <QuestionDialogBox setShowQuestionDialog={setShowQuestionDialog} /> */}
+        {showQuestionDialog && <QuestionDialogBox setShowQuestionDialog={setShowQuestionDialog} />}
 
         <div className='topbar grow-0 h-12 m-2'>
 
