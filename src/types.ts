@@ -47,10 +47,13 @@ export type FinishSelectionObject = {
 }
 
 export interface Selector {
-  handleMouseOverTarget: (target: Selectable) => void;
+  handleMouseOverValidTarget: (target: Selectable) => void;
+  handleMouseOverAnyTarget: (target: Selectable) => void;
   handleMouseLeaveTarget: (target: Selectable) => void;
+  handleMouseLeaveBoard: (target: Selectable) => void;
   handleSelectionFinished: (target: Selectable) => FinishSelectionObject;
-  isSelectionValid: boolean
+  setMaxRectangleSize: (length: number, width: number) => void;
+  isSelectionValid: boolean;
 }
 
 export interface SinglePhaseSelector extends Selector {
@@ -60,6 +63,7 @@ export interface SinglePhaseSelector extends Selector {
 export interface TwoPhaseSelector extends Selector {
   handleFirstClick: (target: Selectable) => void;
   handleSelectionMode: (origin: Selectable, target: Selectable) => void;
+  setExactRectangle: (val: boolean) => void;
 }
 
 type noiseLevel = Record<"OFF" | "LIGHT" | "MEDIUM" | "HEAVY" | "VERYHEAVY", number>;
@@ -70,4 +74,13 @@ export const noiseLevel: noiseLevel = {
   MEDIUM: 8,
   HEAVY: 4,
   VERYHEAVY: 1,
+}
+
+export interface Control {
+  enable: () => void;
+  dispose: () => void;
+}
+
+export interface Animatable {
+  update: (delta: number) => void;
 }

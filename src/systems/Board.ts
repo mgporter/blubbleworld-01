@@ -6,7 +6,7 @@ import { InstancedPondCube } from "../objects/InstancedPondCube";
 import { InstancedFoundationCube } from "../objects/InstancedFoundationCube";
 import { InstancedMountainCube } from "../objects/InstancedMountainCube";
 
-import { C, Globals } from "../Constants";
+import { C } from "../Constants";
 
 type TerrainCounts = {
   TOTAL: number,
@@ -19,26 +19,15 @@ class Board {
 
   #noiseMaker;
   #perlinGrid;
-  #pondThreshold;
-  #mountainThreshold;
   #selectables: SelectableInstancedMesh[];
-  #boardX;
-  #boardY;
   #cubeCounts: TerrainCounts;
-  #scene;
 
-  constructor(worldsizeX: number, worldsizeY: number, pondPercent: number, mountainPercent: number, seed?: number) {
-
-    this.#scene = Globals.scene || new Scene();
+  constructor(worldsizeX: number, worldsizeY: number, pondPercent: number, mountainPercent: number, seed: number | null) {
 
     this.#noiseMaker = new NoiseMaker(worldsizeX, worldsizeY);
     if (seed) this.#noiseMaker.setSeed(seed);
     this.#perlinGrid = this.#noiseMaker.generatePerlinGrid();
     this.#selectables = [];
-    this.#pondThreshold = this.#noiseMaker.getNumberAtPercentile(pondPercent);
-    this.#mountainThreshold = this.#noiseMaker.getNumberAtPercentile(mountainPercent);
-    this.#boardX = worldsizeX;
-    this.#boardY = worldsizeY;
 
     // Create cube counts
     if ((pondPercent + mountainPercent) > 100) 
@@ -58,12 +47,11 @@ class Board {
 
   }
 
-  addBoardToScene() {
+  addBoardToScene(scene: Scene) {
 
     const length = this.#perlinGrid.length;
     const width = this.#perlinGrid[0].length;
 
-    // const cubeCounts = this.makeCubeCount();
     const [pondBreakpoint, grassBreakpoint] = 
       this.#noiseMaker.getBreakPoints(this.#cubeCounts.POND, this.#cubeCounts.GRASS);
     
@@ -121,32 +109,12 @@ class Board {
       }
     }
 
-    this.#scene.add(instancedGrassCube, instancedPondCube, instancedFoundationCube, instancedMountainCube);
+    scene.add(instancedGrassCube, instancedPondCube, instancedFoundationCube, instancedMountainCube);
     this.#selectables.push(instancedGrassCube);
     this.#selectables.push(instancedPondCube);
     this.#selectables.push(instancedMountainCube);
     
   }
-
-  // makeCubeCount(): TerrainCounts {
-
-  //   const counts = {
-  //     POND: 0,
-  //     GRASS: 0,
-  //     MOUNTAIN: 0,
-  //   }
-
-  //   this.#perlinGrid.forEach(row => {
-  //     row.reduce((acc, cur) => {
-  //       if (cur <= this.#pondThreshold) acc.POND++;
-  //       else if (cur <= this.#mountainThreshold) acc.GRASS++;
-  //       else acc.MOUNTAIN++;
-  //       return acc;
-  //     }, counts)
-  //   });
-
-  //   return counts;
-  // }
 
   getSelectables() {
     return this.#selectables;

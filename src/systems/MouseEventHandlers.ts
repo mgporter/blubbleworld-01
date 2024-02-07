@@ -4,14 +4,14 @@ import { FinishSelectionObject, SinglePhaseSelector, TwoPhaseSelector } from "..
 import { Selectable } from "../types";
 import { SelectableInstancedMesh } from "../objects/SelectableInstancedMesh";
 import { MouseEventEmitter } from "./EventEmitter";
-import { Globals } from "../Constants";
-import { Camera, Raycaster, Vector2, WebGLRenderer } from "three";
+import { Camera, Raycaster, Vector2 } from "three";
 
 export type Intersection = {object: Selectable};
 
 
 let inSelectionMode = false;
 let objects: (SelectableMesh | SelectableInstancedMesh)[] = [];
+let selectables: Selectable[];
 
 
 export class MouseEventHandler {
@@ -32,16 +32,21 @@ export class MouseEventHandler {
   #_onMousemove;
 
   constructor(
-    selectableObjects: (SelectableMesh | SelectableInstancedMesh)[],
+    camera: Camera,
+    raycaster: Raycaster,
+    domCanvas: HTMLCanvasElement,
+    selectableObjects?: (SelectableMesh | SelectableInstancedMesh)[],
     selector?: SinglePhaseSelector | TwoPhaseSelector,
   ) {
 
-    objects = selectableObjects;
-    this.#selector = selector || new RectangleSelector(true);
+    objects = selectableObjects || [];
+    selectables = selectableObjects ? MouseEventHandler.selectablesFlatMap(selectableObjects) : [];
 
-    this.#camera = Globals.camera || new Camera();
-    this.#raycaster = Globals.raycaster || new Raycaster();
-    this.#canvas = Globals.domCanvas || new WebGLRenderer().domElement;
+    this.#selector = selector || new EmptySelector();
+
+    this.#camera = camera;
+    this.#raycaster = raycaster;
+    this.#canvas = domCanvas;
     this.#mouse = new Vector2();
 
     this.#_onClick = this.#onClick.bind(this);
@@ -59,6 +64,25 @@ export class MouseEventHandler {
     return (selector as TwoPhaseSelector).handleSelectionMode != undefined;
   }
 
+  /* Calls the callback function on each items in the array. If an instancedMesh is present, than
+  each of that mesh's SelectionObjects will have the function called on them too. This function is
+  specifically for calling on the "objects" array. */
+  static selectablesForEach(array: (SelectableMesh | SelectableInstancedMesh)[], cb: (item: Selectable) => void) {
+    array.forEach(x => {
+      if (MouseEventHandler.isInstancedMesh(x)) {
+        x.getSelectionObjects().forEach(obj => cb(obj));
+      } else {
+        cb(x);
+      }
+    })
+  }
+
+  /* Maps all objects to a single flattened array, regardless of whether it is
+  an instancedMesh or a regular mesh. */
+  static selectablesFlatMap(array: (SelectableMesh | SelectableInstancedMesh)[]): Selectable[] {
+    return array.map(x => MouseEventHandler.isInstancedMesh(x) ? x.getSelectionObjects() : x).flat();
+  }
+
   enable() {
     this.#canvas.addEventListener("click", this.#_onClick);
     this.#canvas.addEventListener("mousemove", this.#_onMousemove);
@@ -73,6 +97,9 @@ export class MouseEventHandler {
 
   setSelector(selector: SinglePhaseSelector | TwoPhaseSelector) {
     this.#selector = selector;
+    if (!MouseEventHandler.isTwoPhaseSelector(selector)) {
+      inSelectionMode = false;
+    }
   }
 
   getSelector() {
@@ -81,6 +108,7 @@ export class MouseEventHandler {
 
   setObjects(newObjects: (SelectableMesh | SelectableInstancedMesh)[]) {
     objects = newObjects;
+    selectables = MouseEventHandler.selectablesFlatMap(newObjects);
   }
 
   getObjects() {
@@ -107,9 +135,10 @@ export class MouseEventHandler {
         } else {
 
           // We will always end up here for Single Phase Selectors
-          if (this.#selector.isSelectionValid)
+          if (this.#selector.isSelectionValid) {
             MouseEventEmitter.dispatch("selectionFinished", this.#selector.handleSelectionFinished(this._currentTarget));
             this.#clearSelection();
+          }
         }
 
         this._currentTarget = null;
@@ -145,8 +174,8 @@ export class MouseEventHandler {
   */
   #getValidTarget(intersections: Intersection[]): Selectable | null {
     if (intersections.length === 0) {
-      if (this._currentTarget && !inSelectionMode) 
-        this._currentTarget.unselectAndUnhover();
+      if (this._currentTarget && !inSelectionMode)
+        this.#selector.handleMouseLeaveBoard(this._currentTarget);
       this._currentTarget = null;
       this.#mouseoverTarget = null;
       MouseEventEmitter.dispatch("hover", {target: null, objects: null});
@@ -158,6 +187,7 @@ export class MouseEventHandler {
     this.#mouseoverTarget = intersections[0].object;
 
     MouseEventEmitter.dispatch("hover", {target: this.#mouseoverTarget, objects: null});
+    this.#selector.handleMouseOverAnyTarget(this.#mouseoverTarget);
 
     return this.#mouseoverTarget;
 
@@ -198,9 +228,9 @@ export class MouseEventHandler {
 
       if (mouseoverTarget.isSelectable()) {
 
-        if (this._currentTarget) this._currentTarget.unhover();
+        if (this._currentTarget) this.#selector.handleMouseLeaveTarget(this._currentTarget);
         this._currentTarget = mouseoverTarget;
-        this.#selector.handleMouseOverTarget(mouseoverTarget);
+        this.#selector.handleMouseOverValidTarget(mouseoverTarget);
 
       } else {
         if (this._currentTarget != null) {
@@ -221,11 +251,62 @@ export class MouseEventHandler {
 }
 
 
-/** ExactRectangleSelector allows the user to select multiple
- * elements in a rectangle, but unselectable objects within the
- * rectangle will void the selection.
+
+
+
+
+
+
+
+
+
+
+
+/** The Empty Selector does nothing and returns nothing. It is
+ * used to disable mouse selection. Note however, that the 
+ * MouseEventHandler will still dispatch mouse events to
+ * any subscriptors.
   */
-export class RectangleSelector implements TwoPhaseSelector {
+
+export class EmptySelector implements SinglePhaseSelector {
+  handleMouseOverAnyTarget(target: Selectable) {}
+  handleMouseOverValidTarget(target: Selectable) {}
+  handleMouseLeaveTarget(target: Selectable) {}
+  handleMouseLeaveBoard(target: Selectable) {}
+  handleSelectionFinished(target: Selectable) {
+    return {objects: null, target: null, data: {
+      minX: 0,
+      maxX: 0,
+      minY: 0,
+      maxY: 0,
+      lengthX: 0,
+      lengthY: 0,
+      totalArea: 0,
+      validCount: 0,
+    }}
+  }
+  setMaxRectangleSize(length: number, width: number) {}
+
+  isSelectionValid = false;
+}
+
+
+
+
+
+
+
+
+
+
+
+/** FlexibleRectangleSelector allows the user to select all
+ * items within a flexibly-sized rectangle. A max size can be set,
+ * as well as if the selection should be invalidated if unselectable
+ * objects are contained within the rectangle.
+  */
+
+export class FlexibleRectangleSelector implements TwoPhaseSelector {
   
   isSelectionValid = true;
 
@@ -244,18 +325,34 @@ export class RectangleSelector implements TwoPhaseSelector {
   #maxWidth;
   #allowIncompleteRectangles;
   
-  constructor(allowIncompleteRectangles: boolean, maxLength?: number, maxWidth?: number) {
+  constructor(allowIncompleteRectangles?: boolean, maxLength?: number, maxWidth?: number) {
     this.#maxLength = maxLength || -1;
     this.#maxWidth = maxWidth || -1;
-    this.#allowIncompleteRectangles = allowIncompleteRectangles;
+    this.#allowIncompleteRectangles = allowIncompleteRectangles == undefined ? true : allowIncompleteRectangles;
   }
 
-  handleMouseOverTarget(target: Selectable) {
+  /** Set to any number, or to -1 to turn off size restrictions */
+  setMaxRectangleSize(length: number, width: number) {
+    this.#maxLength = length;
+    this.#maxWidth = width;
+  }
+
+  setExactRectangle(val: boolean) {
+    this.#allowIncompleteRectangles = val;
+  }
+
+  handleMouseOverValidTarget(target: Selectable) {
     target.hover();
   }
 
+  handleMouseOverAnyTarget(target: Selectable) {}
+
   handleMouseLeaveTarget(target: Selectable) {
     target.unhover();
+  }
+
+  handleMouseLeaveBoard(target: Selectable) {
+    target.unselectAndUnhover();
   }
 
   handleFirstClick(target: Selectable) {
@@ -264,17 +361,10 @@ export class RectangleSelector implements TwoPhaseSelector {
 
   handleSelectionFinished(target: Selectable): FinishSelectionObject {
     const selection: Selectable[] = [];
-    objects.forEach(mesh => {
-      if (MouseEventHandler.isInstancedMesh(mesh)) {
-        mesh.getSelectionObjects()
-          .filter(obj => obj.isSelectedOrHovered())
-          .forEach(obj => selection.push(obj));
-      } 
-      else {
-        if (mesh.isSelectedOrHovered()) 
-          selection.push(mesh);
-      }
-    })
+
+    selectables
+      .filter(x => x.isSelectedOrHovered())
+      .forEach(x => selection.push(x));
 
     return {
       objects: selection,
@@ -341,24 +431,156 @@ export class RectangleSelector implements TwoPhaseSelector {
     const insideRect: Selectable[] = [];
     const outsideRect: Selectable[] = [];
 
-    objects.forEach(x => {
-      
-      if (MouseEventHandler.isInstancedMesh(x)) {
-        x.getSelectionObjects().forEach(obj => {
-          if (!obj.isSelectable()) return;
-          if (this.#inBounds(obj)) insideRect.push(obj);
-          else outsideRect.push(obj);
-        });
-      } else {
-        if (!x.isSelectable()) return;
+    selectables
+      .filter(x => x.isSelectable())
+      .forEach(x => {
         if (this.#inBounds(x)) insideRect.push(x);
         else outsideRect.push(x);
-      }
-    })
+      })
 
     this.#insideRect = insideRect;
     this.#outsideRect = outsideRect;
     this.#validCount = insideRect.length;
+  }
+
+  #addRectSelectionEffect(isValid: boolean) {
+    // Reset the colors of everything only if there is a change in validity
+    if (isValid != this.isSelectionValid) this.#insideRect.forEach(x => x.unhover());
+    this.isSelectionValid = isValid;
+    
+    this.#insideRect.forEach(x => x.hover(!isValid));
+    this.#outsideRect.forEach(x => x.unhover());
+  }
+
+  #inBounds(obj: Selectable) {
+    const coord = obj.getCoordinates();
+    return coord.x >= this.#minX && coord.x <= this.#maxX && coord.y >= this.#minY && coord.y <= this.#maxY;
+  }
+
+}
+
+
+
+
+
+
+
+
+
+
+
+
+/** FixedRectangleSelector is a basic selector that allows the
+ * user to select one or more items in a rectangle of fixed size.
+ * The size cannot be changed by the user. Use this if you just
+ * want to select a single item.
+  */
+
+export class FixedRectangleSelector implements SinglePhaseSelector {
+  
+  isSelectionValid = true;
+
+  #minX = Number.MAX_SAFE_INTEGER; 
+  #maxX = Number.MIN_SAFE_INTEGER; 
+  #minY = Number.MAX_SAFE_INTEGER;
+  #maxY = Number.MIN_SAFE_INTEGER;
+  #insideRect: Selectable[] = [];
+  #outsideRect: Selectable[] = [];
+
+  #lengthX = 1;
+  #lengthY = 1;
+  #totalCount;
+  
+  constructor(length: number, width: number) {
+    this.#lengthX = length;
+    this.#lengthY = width;
+    this.#totalCount = this.#lengthX * this.#lengthY;
+  }
+
+  setMaxRectangleSize(length: number, width: number) {
+    this.#lengthX = length;
+    this.#lengthY = width;
+    this.#totalCount = this.#lengthX * this.#lengthY;
+  }
+
+  handleMouseOverValidTarget(target: Selectable) {}
+
+  handleMouseOverAnyTarget(target: Selectable) {
+
+    this.#setMinMaxCoordinates(target);
+    this.#findObjectsThatAreInsideAndOutsideRect();
+
+    const selectionContainsUnselectables = this.#insideRect.length < this.#totalCount;
+    this.isSelectionValid = selectionContainsUnselectables;
+
+    if (selectionContainsUnselectables) {
+      this.#addRectSelectionEffect(false);
+    } else {
+      this.#addRectSelectionEffect(true);
+    }
+
+  }
+
+  handleMouseLeaveBoard(target: Selectable) {
+
+    selectables.forEach(x => x.unselectAndUnhover());
+
+  }
+
+  handleMouseLeaveTarget(target: Selectable) {}
+
+  handleSelectionFinished(target: Selectable): FinishSelectionObject {
+
+    const selection: Selectable[] = [];
+
+    selectables
+      .filter(x => x.isSelectedOrHovered())
+      .forEach(x => selection.push(x));
+
+    return {
+      objects: selection,
+      target: target,
+      data: {
+        minX: this.#minX,
+        maxX: this.#maxX,
+        minY: this.#minY,
+        maxY: this.#maxY,
+        lengthX: this.#lengthX,
+        lengthY: this.#lengthY,
+        totalArea: this.#totalCount,
+        validCount: this.#totalCount,
+      }
+    };
+  }
+
+  #setMinMaxCoordinates(target: Selectable) {
+
+    /* If we use different cubes, we may have to update the coordinates */
+    const targetX = target.getCoordinates().x, targetY = target.getCoordinates().y;
+
+    const offsetX = Math.floor((this.#lengthX) / 2);
+    const offsetY = Math.floor((this.#lengthY - 1) / 2);
+
+    this.#minX = targetX - offsetX;
+    this.#maxX = targetX + (this.#lengthX - offsetX - 1); 
+    this.#minY = targetY - offsetY;
+    this.#maxY = targetY + (this.#lengthY - offsetY - 1);
+
+  }
+
+  #findObjectsThatAreInsideAndOutsideRect() {
+    const insideRect: Selectable[] = [];
+    const outsideRect: Selectable[] = [];
+
+    selectables
+      .filter(x => x.isSelectable())
+      .forEach(x => {
+        if (this.#inBounds(x)) insideRect.push(x);
+        else outsideRect.push(x);
+      });
+
+    this.#insideRect = insideRect;
+    this.#outsideRect = outsideRect;
   }
 
   #addRectSelectionEffect(isValid: boolean) {
@@ -376,17 +598,3 @@ export class RectangleSelector implements TwoPhaseSelector {
   }
 
 }
-
-
-/* #updateRectangleSelection(origin: Selectable, target: Selectable) {
-
-  Old code
-  objects.forEach(x => {
-    if (this.#isInstancedMesh(x)) {
-      x.getSelectionObjects().forEach(obj => this.#addSelectionRectangle(obj, minX, maxX, minZ, maxZ));
-    } else {
-      this.#addSelectionRectangle(x, minX, maxX, minZ, maxZ);
-    }
-  });
-
-} */

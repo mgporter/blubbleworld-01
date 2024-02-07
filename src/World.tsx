@@ -1,51 +1,36 @@
 import { useFrame, useThree } from "@react-three/fiber";
 import { useEffect } from "react"
-import { MyFlyControls } from "./systems/MyFlyControls";
-import { WorldBuilder } from "./systems/WorldBuilder";
-import { C, Globals } from "./Constants";
-import { MouseEventHandler, RectangleSelector } from "./systems/MouseSelectRect";
+import { C } from "./Constants";
+import CanvasInterface from "./systems/CanvasInterface";
 
-let flyControls: MyFlyControls;
-let worldBuilder: WorldBuilder;
-
-export function World() {
-
-  const { camera, scene, gl, raycaster } = useThree();
-
-  useEffect(() => {
-    Globals.camera = camera;
-    Globals.scene = scene;
-    Globals.domCanvas = gl.domElement;
-    Globals.raycaster = raycaster;
-  }, [camera, scene, gl, raycaster]); 
+export function World({canvasInterface}: {canvasInterface: CanvasInterface}) {
 
   useEffect(() => {
 
-    worldBuilder = new WorldBuilder();
+    // canvasInterface.setState({camera, scene, raycaster, gl});
 
-    flyControls = new MyFlyControls();
+    /* These will occur as soon as the canvas loads up */
+    canvasInterface.buildWorld(
+      C.worldsizeX, 
+      C.worldsizeY, 
+      C.pondPercent, 
+      C.mountainPercent, 
+      C.worldGenerationSeed);
+      
+    canvasInterface.enableFlyControls();
+    canvasInterface.setSelector(null);
 
     return () => {
-      flyControls.dispose();
-      worldBuilder.clearWorld();
+      canvasInterface.clearWorld();
+      canvasInterface.disableFlyControls();
+      canvasInterface.disposeAll();
     }
-  }, [camera, scene, gl, raycaster]);
+  }, [canvasInterface]);
 
   useFrame((state, delta) => {
-    flyControls.update(delta);
+    canvasInterface.updateAnimatables(delta);
   });
 
-  useEffect(() => {
-
-    const rectSelector = new MouseEventHandler(
-      worldBuilder.getBoardObjects(), 
-      new RectangleSelector(true, 12, 12));
-
-    return () => {
-      rectSelector.dispose();
-    }
-
-  }, []);
 
   return (
     <>

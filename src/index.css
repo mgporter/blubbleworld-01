@@ -11,7 +11,51 @@ body {
   padding:0;
 }
 
-/* #canvas-container {
-  position: absolute;
-  z-index: 0;
-} */
+input[type=number]::-webkit-outer-spin-button,
+input[type=number]::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+
+input[type=number] {
+    -moz-appearance:textfield;
+}
+
+button {
+  border-radius: 4px;
+  padding: 2px 16px;
+}
+
+.btn {
+  @apply font-bold py-0.5 px-4 rounded transition-colors duration-100;
+}
+
+.btn-blue {
+  @apply bg-blue-500 text-white border-gray-700 border-[1px];
+}
+.btn-blue:hover {
+  @apply bg-blue-700 ;
+}
+.btn-blue:active {
+  @apply bg-blue-900;
+}
+
+.btn-teal {
+  @apply bg-teal-500 text-white border-gray-700 border-[1px];
+}
+.btn-teal:hover {
+  @apply bg-teal-600 ;
+}
+.btn-teal:active {
+  @apply bg-teal-800;
+}
+
+.btn-emerald {
+  @apply bg-emerald-500 text-white border-gray-700 border-[1px];
+}
+.btn-emerald:hover {
+  @apply bg-emerald-600 ;
+}
+.btn-emerald:active {
+  @apply bg-emerald-700;
+}

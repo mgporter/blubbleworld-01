@@ -5,7 +5,12 @@ import { useState } from "react";
 import { Buildables } from "../Buildables";
 import { motion } from "framer-motion";
 
-export default function BuildMenu() {
+interface BuildMenuProps {
+  onBuildingSelect: (buildingType: string) => void,
+  buildMenuEnabled: boolean,
+}
+
+export default function BuildMenu({onBuildingSelect, buildMenuEnabled}: BuildMenuProps) {
 
   const [showMenu, setShowMenu] = useState(false);
 
@@ -42,10 +47,10 @@ export default function BuildMenu() {
       layoutId="buildMenuOpenCloseAction"
       initial={false}>
 
-      <div className="border-2 rounded-xl border-gray-700 border-solid size-18 p-2 self-start
-        bg-slate-700 hover:bg-slate-200 active:bg-white transition-colors duration-100 cursor-pointer
-        grow-0"
-        onClick={() => setShowMenu(!showMenu)}>
+      <div className={"border-2 rounded-xl border-gray-700 border-solid size-18 p-2 self-start " +
+        "bg-slate-700 transition-colors duration-100 cursor-pointer " +
+        "grow-0 " + (buildMenuEnabled ? "hover:bg-slate-200 active:bg-white ": " ")}
+        onClick={() => {if (buildMenuEnabled) setShowMenu(!showMenu)}}>
         <img src={buildBuildingIcon} className="size-14" />
       </div>
       
@@ -56,7 +61,13 @@ export default function BuildMenu() {
         <h1 className='text-2xl mb-2'>Select a building</h1>
         <ul>
           {buildings.map((b) => (
-            <li><NavSelectionOption img={b.icon} mainText={b.displayName} subText={`$${b.price}`} /></li>
+            <li key={b.displayName}>
+              <NavSelectionOption 
+              onClickHandler={() => {onBuildingSelect(b.keyName); setShowMenu(false);}} 
+              img={b.icon} 
+              mainText={b.displayName} 
+              subText={`$${b.price}`} />
+            </li>
           ))}
         </ul>
       </motion.div>

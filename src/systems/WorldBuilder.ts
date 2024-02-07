@@ -3,7 +3,6 @@ import { Lights } from "../objects/Lights";
 import { Board } from "./Board";
 import { Selector } from "../types";
 import { C } from "../Constants";
-import { Globals } from "../Constants";
 
 class WorldBuilder {
 
@@ -14,13 +13,9 @@ class WorldBuilder {
 
   
   #board;
-  #boardSelector: Selector | null;
-
   #scene;
 
   constructor() {
-
-    this.#boardSelector = null;
 
     this.worldsizeX = C.worldsizeX;
     this.worldsizeY = C.worldsizeY;
@@ -34,7 +29,7 @@ class WorldBuilder {
     this.#scene.add(directionalLight, ambientLight);
 
     this.#board = new Board(C.worldsizeX, C.worldsizeY, this.pondPercent, this.mountainPercent);
-    this.#board.addBoardToScene();
+    this.#board.addBoardToScene(this.#scene);
 
   }
 

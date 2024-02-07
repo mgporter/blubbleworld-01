@@ -5,7 +5,8 @@ import {
   Camera
 } from 'three';
 
-import { C, Globals } from '../Constants';
+import { C } from '../Constants';
+import { Animatable } from '../types';
 
 const _changeEvent = { type: 'change' };
 
@@ -17,9 +18,9 @@ let _pointercancel: () => void;
 let _keydown: (e: KeyboardEvent) => void;
 let _keyup: (e: KeyboardEvent) => void;
 
-class MyFlyControls extends EventDispatcher {
+class MyFlyControls extends EventDispatcher implements Animatable {
 
-  enabled;
+  #enabled;
   movementSpeed;
   rollSpeed;
   dragToLook;
@@ -46,13 +47,13 @@ class MyFlyControls extends EventDispatcher {
   #lastPosition;
   #EPS;
 
-	constructor() {
+	constructor(camera: Camera, domCanvas: HTMLCanvasElement) {
 
 		super();
 
     this.#enableLimits = C.enableCameraLimits;
-		this.#camera = Globals.camera;
-		this.#domElement = Globals.domCanvas;
+		this.#camera = camera
+		this.#domElement = domCanvas;
 
     // MIN: DOWN, HEIGHTMIN, LEFT
     // MAX: UP, HEIGHTMAX, RIGHT
@@ -61,7 +62,7 @@ class MyFlyControls extends EventDispatcher {
       MAX: new Vector3(C.worldsizeY - 7, 18, C.worldsizeX + 4)
     }
 
-		this.enabled = true;
+		this.#enabled = false;
 		this.movementSpeed = 10;
 		this.rollSpeed = 1;
 		this.dragToLook = false;
@@ -95,7 +96,6 @@ class MyFlyControls extends EventDispatcher {
     this.#movementSpeedMultiplier = 1;
 
 
-
 		_contextmenu = this.contextMenu.bind( this );
 		_pointermove = this.pointermove.bind( this );
 		_pointerdown = this.pointerdown.bind( this );
@@ -110,17 +110,44 @@ class MyFlyControls extends EventDispatcher {
 		// this.#domElement.addEventListener('pointerup', _pointerup);
 		// this.#domElement.addEventListener('pointercancel', _pointercancel);
 
-		window.addEventListener('keydown', _keydown);
-		window.addEventListener('keyup', _keyup);
-
 		this.updateMovementVector();
 		this.updateRotationVector();
 
 	}
 
+  enableLimits() {
+    this.#enableLimits = true;
+  }
+
+  disableLimits() {
+    this.#enableLimits = false;
+  }
+
+  enable() {
+    if (this.#enabled === true) return;
+		window.addEventListener('keydown', _keydown);
+		window.addEventListener('keyup', _keyup);
+    this.#enabled = true;
+  }
+
+  dispose() {
+
+    // this.#domElement.removeEventListener( 'contextmenu', _contextmenu );
+    // this.#domElement.removeEventListener( 'pointerdown', _pointerdown );
+    // this.#domElement.removeEventListener( 'pointermove', _pointermove );
+    // this.#domElement.removeEventListener( 'pointerup', _pointerup );
+    // this.#domElement.removeEventListener( 'pointercancel', _pointercancel );
+
+    window.removeEventListener( 'keydown', _keydown );
+    window.removeEventListener( 'keyup', _keyup );
+    this.#enabled = false;
+  }
+
+  
+
   keydown(event: KeyboardEvent) {
 
-    if ( event.altKey || this.enabled === false ) {
+    if ( event.altKey || this.#enabled === false ) {
       return;
     }
 
@@ -157,7 +184,7 @@ class MyFlyControls extends EventDispatcher {
 
   keyup(event: KeyboardEvent) {
 
-    if ( this.enabled === false ) return;
+    if ( this.#enabled === false ) return;
 
     switch ( event.code ) {
 
@@ -191,7 +218,7 @@ class MyFlyControls extends EventDispatcher {
 
   pointerdown(event: Event) {
 
-    if ( this.enabled === false ) return;
+    if ( this.#enabled === false ) return;
 
     if ( this.dragToLook ) {
 
@@ -214,7 +241,7 @@ class MyFlyControls extends EventDispatcher {
 
   pointermove(event: Event) {
 
-    if ( this.enabled === false ) return;
+    if ( this.#enabled === false ) return;
 
     if ( ! this.dragToLook || this.#status > 0 ) {
 
@@ -233,7 +260,7 @@ class MyFlyControls extends EventDispatcher {
 
   pointerup(event: Event) {
 
-    if ( this.enabled === false ) return;
+    if ( this.#enabled === false ) return;
 
     if ( this.dragToLook ) {
 
@@ -260,7 +287,7 @@ class MyFlyControls extends EventDispatcher {
 
   pointercancel() {
 
-    if ( this.enabled === false ) return;
+    if ( this.#enabled === false ) return;
 
     if ( this.dragToLook ) {
 
@@ -283,7 +310,7 @@ class MyFlyControls extends EventDispatcher {
 
   contextMenu(event: Event) {
 
-    if ( this.enabled === false ) return;
+    if ( this.#enabled === false ) return;
 
     event.preventDefault();
 
@@ -291,7 +318,7 @@ class MyFlyControls extends EventDispatcher {
 
   update(delta: number) {
 
-    if ( this.enabled === false ) return;
+    if ( this.#enabled === false ) return;
 
     const moveMult = delta * this.movementSpeed;
 
@@ -368,19 +395,6 @@ class MyFlyControls extends EventDispatcher {
       };
 
     }
-
-  }
-
-  dispose() {
-
-    // this.#domElement.removeEventListener( 'contextmenu', _contextmenu );
-    // this.#domElement.removeEventListener( 'pointerdown', _pointerdown );
-    // this.#domElement.removeEventListener( 'pointermove', _pointermove );
-    // this.#domElement.removeEventListener( 'pointerup', _pointerup );
-    // this.#domElement.removeEventListener( 'pointercancel', _pointercancel );
-
-    window.removeEventListener( 'keydown', _keydown );
-    window.removeEventListener( 'keyup', _keyup );
 
   }
 
