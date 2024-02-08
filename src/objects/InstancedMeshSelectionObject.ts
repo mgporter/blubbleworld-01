@@ -1,5 +1,6 @@
-import { Color, InstancedMesh, Matrix4, Vector3 } from "three";
+import { Matrix4, Vector3 } from "three";
 import { SelectableInstancedMesh } from "./SelectableInstancedMesh";
+import { Buildable } from "../Buildables";
 
 class InstancedMeshSelectionObject {
 
@@ -9,6 +10,7 @@ class InstancedMeshSelectionObject {
   #index;
   #coordinates = new Vector3();
   #instancedMeshRef: SelectableInstancedMesh;
+  #buildables: {id: number, buildable: Buildable}[] = [];
 
   constructor(
     isSelectable: boolean, 
@@ -124,6 +126,18 @@ class InstancedMeshSelectionObject {
     this.#isSelected = false;
     this.#isHovered = false;
     this.changeToDefaultAppearance(this.#index);
+  }
+
+  addBuildable(buildable: Buildable, id: number) {
+    this.#buildables.push({id: id, buildable: buildable});
+  }
+
+  getBuildables() {
+    return this.#buildables;
+  }
+
+  isOccupied() {
+    return this.#buildables.length > 0;
   }
 
 

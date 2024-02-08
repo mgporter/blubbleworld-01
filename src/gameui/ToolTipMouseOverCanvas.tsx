@@ -1,23 +1,39 @@
 import { useEffect, useState } from "react";
 import { MouseEventEmitter } from "../systems/EventEmitter";
 import { Selectable } from "../types";
+import CTr from "../systems/CoordinateTranslator";
 
-const displayGridName = (selectable: Selectable | null) => {
-  if (selectable == null) return "";
-
+const displayGridName = (selectable: Selectable) => {
   const displayName = selectable.getMesh().displayName;
   const coord = selectable.getCoordinates();
-  return `${displayName} at (${Math.abs(coord.x) + 1}, ${Math.abs(coord.y) + 1})`;
+  const buildingName = selectable.getBuildables().length > 0 ?
+    ` with ${selectable.getBuildables()[0].buildable.displayName.toLowerCase()}` : ""
+  return `${displayName}${buildingName} at (${CTr.boardToMouse(coord.x)}, ${CTr.boardToMouse(coord.y)})`;
 
 };
 
 export default function ToolTipMouseOverCanvas() {
 
   const [mouseHoverTip, setMouseHoverTip] = useState("");
+  const [textStyle, setTextStyle] = useState<React.CSSProperties>({display: "none"});
 
   useEffect(() => {
     const subObj = MouseEventEmitter.subscribe("hover", (selectionObj) => {
-      setMouseHoverTip(displayGridName(selectionObj.target));
+      if (selectionObj.target == null) {
+        setTextStyle({display: "none"});
+        return;
+      }
+
+      const text = displayGridName(selectionObj.target!);
+
+      if (selectionObj.target!.isSelectable()) {
+        setMouseHoverTip(text);
+        setTextStyle({color: "rgb(230, 230, 230)", fontWeight: "400"});
+      } else {
+        setMouseHoverTip("Unselectable " + text);
+        setTextStyle({color: "rgb(248, 113, 113)", fontWeight: "500"});
+      }
+
     });
 
     return () => {
@@ -26,9 +42,8 @@ export default function ToolTipMouseOverCanvas() {
   }, []);
 
   return (
-    <div className={"bg-white/20 rounded-xl w-48 text-center m-auto p-1 select-none " +
-      (mouseHoverTip === "" ? "hidden " : " ") +
-      (mouseHoverTip.startsWith("Grass") ? "text-white " : "text-red-400 font-medium")}>
+    <div className="bg-white/15 rounded-2xl px-8 text-center m-auto p-1 select-none"
+      style={textStyle}>
       <p>{mouseHoverTip}</p>
     </div>
   )

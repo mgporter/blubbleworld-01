@@ -1,25 +1,38 @@
-import { ChangeEvent, useState } from "react"
+import { ChangeEvent, useCallback, useState } from "react"
 import { FinishSelectionObject } from "../types";
 import { BuildableType, Buildables } from "../Buildables";
+import { motion } from "framer-motion";
 
 interface QuestionDialogBoxProps {
   selectedBuilding: BuildableType,
   questionDialogData: FinishSelectionObject,
   handleCloseQuestionDialog: () => void,
+  placeBuildingOnCanvas: () => void,
 }
 
 const cellProperties = "bg-green-700 flex gap-[8%] items-center justify-center row-span-1 col-span-1 "
 
 
-export default function QuestionDialogBox({selectedBuilding, questionDialogData, handleCloseQuestionDialog}: QuestionDialogBoxProps) {
+export default function QuestionDialogBox({
+  selectedBuilding, 
+  questionDialogData, 
+  handleCloseQuestionDialog,
+  placeBuildingOnCanvas}: QuestionDialogBoxProps) {
 
   const [answer, setAnswer] = useState<string>("");
-
 
   function handleAnswer(e: ChangeEvent<HTMLInputElement>) {
     let answer = e.target.value;
     if (answer.length > 4) answer = answer.substring(0, 4);
     setAnswer(answer);
+  }
+
+  function submitAnswer() {
+    if (Number(answer) === (gridSize.objectCount * building.price)) {
+      placeBuildingOnCanvas();
+    } else {
+      placeBuildingOnCanvas();
+    }
   }
 
   const currentBuilding = selectedBuilding;
@@ -49,9 +62,16 @@ export default function QuestionDialogBox({selectedBuilding, questionDialogData,
 
 
   return (
-    <div className='absolute w-full h-full flex justify-center items-center'>
-      <div className='relative w-3/4 h-3/4 bg-black/50 rounded-3xl flex flex-col
-        justify-center gap-4 items-center pointer-events-auto'>
+    <div className='absolute w-full h-full flex justify-center items-center'
+      style={{perspective: "800px"}}>
+
+      {/* This is the container with a background */}
+      <motion.div className='relative w-3/4 h-3/4 bg-black/50 rounded-3xl flex flex-col
+        justify-center gap-4 items-center pointer-events-auto'
+        initial={{rotateX: 90}}
+        animate={{rotateX: 0}}
+        transition={{duration: 0.6, ease: "anticipate"}}>
+
         <div className="absolute top-0 right-3 text-red-500 text-5xl font-bold
         cursor-pointer hover:text-red-700 select-none"
         onClick={() => handleCloseQuestionDialog()}>×</div>
@@ -74,10 +94,10 @@ export default function QuestionDialogBox({selectedBuilding, questionDialogData,
             <input className="font-bold w-12 p-0 m-0 bg-transparent focus:outline-none align-middle
             border-white border-b-2 border-opacity-50 hover:border-opacity-100 focus:border-opacity-100"
              type="number" onChange={handleAnswer} value={answer}></input>
-            <button className="btn btn-emerald">🗸 Buy it!</button>
+            <button onClick={submitAnswer} className="btn btn-emerald">🗸 Buy it!</button>
         </div>
 
-      </div>
+      </motion.div>
     </div>
   )
 

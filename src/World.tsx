@@ -5,9 +5,13 @@ import CanvasInterface from "./systems/CanvasInterface";
 
 export function World({canvasInterface}: {canvasInterface: CanvasInterface}) {
 
-  useEffect(() => {
+  const {camera, scene, gl, raycaster} = useThree();
 
-    // canvasInterface.setState({camera, scene, raycaster, gl});
+  useEffect(() => {
+    console.log("Interface update");
+    canvasInterface.setState(scene, camera, gl, raycaster);
+    canvasInterface.enableFlyControls();
+    // canvasInterface.enableMouseHandler();
 
     /* These will occur as soon as the canvas loads up */
     canvasInterface.buildWorld(
@@ -17,15 +21,16 @@ export function World({canvasInterface}: {canvasInterface: CanvasInterface}) {
       C.mountainPercent, 
       C.worldGenerationSeed);
       
-    canvasInterface.enableFlyControls();
     canvasInterface.setSelector(null);
+
+    gl.setSize(gl.domElement.clientWidth, gl.domElement.clientHeight, true);
 
     return () => {
       canvasInterface.clearWorld();
       canvasInterface.disableFlyControls();
       canvasInterface.disposeAll();
     }
-  }, [canvasInterface]);
+  }, [canvasInterface, camera, scene, raycaster, gl]);
 
   useFrame((state, delta) => {
     canvasInterface.updateAnimatables(delta);

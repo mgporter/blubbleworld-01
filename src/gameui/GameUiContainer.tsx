@@ -3,30 +3,39 @@ import BuildMenu from './BuildMenu';
 import ToolTipMouseOverCanvas from './ToolTipMouseOverCanvas';
 import QuestionDialogBox from './QuestionDialogBox';
 import { MouseEventEmitter } from '../systems/EventEmitter';
-import { BuildableType, Buildables } from '../Buildables';
-import { FinishSelectionObject } from '../types';
+import { Buildable, BuildableType, Buildables } from '../Buildables';
+import { FinishSelectionObject, Selectable } from '../types';
 import CanvasInterface from '../systems/CanvasInterface';
+import { Vector2, Vector3 } from 'three';
+import CTr from '../systems/CoordinateTranslator';
+import { MouseEventHandler } from '../systems/MouseEventHandlers';
 
-export default function GameUiContainer({canvasInterface}: {canvasInterface: CanvasInterface}) {
+
+interface GameUiContainerProps {
+  canvasInterface: CanvasInterface;
+}
+
+export default function GameUiContainer({canvasInterface}: GameUiContainerProps) {
 
   const [selectedBuilding, setSelectedBuilding] = useState<BuildableType>("");
   const [questionDialogData, setQuestionDialogData] = useState<FinishSelectionObject>(({} as FinishSelectionObject));
   const [showQuestionDialog, setShowQuestionDialog] = useState(false);
   const [buildMenuEnabled, setBuildMenuEnabled] = useState(true);
+  const [showToolTips, setShowToolTips] = useState(true);
+  const [mouseCoordinates, setMouseCoordinates] = useState(new Vector2());
 
   const onBuildingSelect = useCallback((buildingType: string) => {
-    console.log(buildingType)
     setSelectedBuilding(buildingType);
     const selector = Buildables[buildingType].selector;
-    // selector.setMaxRectangleSize(4, 4);
     canvasInterface.setSelector(selector);
   }, [canvasInterface]);
 
   const onBuildingPlace = useCallback((result: FinishSelectionObject) => {
-    console.log(result)
+    setMouseCoordinates(new Vector2(result.target?.getCoordinates().x, result.target?.getCoordinates().y));
     setQuestionDialogData(result);
     setShowQuestionDialog(true);
     setBuildMenuEnabled(false);
+    setShowToolTips(false);
     canvasInterface.setSelector(null);
   }, [canvasInterface]);
 
@@ -35,6 +44,7 @@ export default function GameUiContainer({canvasInterface}: {canvasInterface: Can
     const selector = Buildables[selectedBuilding].selector;
     canvasInterface.setSelector(selector);
     setBuildMenuEnabled(true);
+    setShowToolTips(true);
   }, [selectedBuilding, setShowQuestionDialog, canvasInterface]);
 
   useEffect(() => {
@@ -44,6 +54,19 @@ export default function GameUiContainer({canvasInterface}: {canvasInterface: Can
       subscribeObj.unsubscribe();
     }
   }, [onBuildingPlace]);
+
+  useEffect(() => {
+    // canvasInterface.placeBuilding("skyscraper", 1, 1, 1);
+  }, [canvasInterface]);
+
+
+  function placeBuildingOnCanvas() {
+    handleCloseQuestionDialog();
+    if (questionDialogData.objects == null) return;
+    canvasInterface.placeBuilding(Buildables[selectedBuilding], questionDialogData);
+  }
+
+
 
 
 
@@ -61,13 +84,14 @@ export default function GameUiContainer({canvasInterface}: {canvasInterface: Can
         {showQuestionDialog && <QuestionDialogBox 
           selectedBuilding={selectedBuilding} 
           questionDialogData={questionDialogData}
-          handleCloseQuestionDialog={handleCloseQuestionDialog} />}
+          handleCloseQuestionDialog={handleCloseQuestionDialog}
+          placeBuildingOnCanvas={placeBuildingOnCanvas} />}
 
         <div className='topbar grow-0 h-12 m-2'>
 
         </div>
         <div className='bottombar grow-0 h-12 m-2 flex items-center justify-center'>
-          <ToolTipMouseOverCanvas />
+          {showToolTips &&<ToolTipMouseOverCanvas />}
         </div>
       </div>
 

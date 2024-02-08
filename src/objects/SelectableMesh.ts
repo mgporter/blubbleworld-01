@@ -1,4 +1,5 @@
 import { BufferGeometry, Color, Material, Mesh, Vector3 } from "three";
+import { Buildable } from "../Buildables";
 
 class SelectableMesh extends Mesh {
 
@@ -12,6 +13,8 @@ class SelectableMesh extends Mesh {
   selectedColor = new Color(0x999999);
   hoverColor = new Color(0x444444);
   rejectedColor = new Color(0xff0000);
+
+  #buildables: {id: number, buildable: Buildable}[] = [];
 
   constructor(geometry: BufferGeometry, material: Material, coordinates?: Vector3, selectable?: boolean) {
     super(geometry, material);
@@ -103,6 +106,18 @@ class SelectableMesh extends Mesh {
     this.#isSelected = false;
     this.#isHovered = false;
     this.changeToDefaultAppearance();
+  }
+
+  addBuildable(buildable: Buildable, id: number) {
+    this.#buildables.push({id: id, buildable: buildable});
+  }
+
+  getBuildables() {
+    return this.#buildables;
+  }
+
+  isOccupied() {
+    return this.#buildables.length > 0;
   }
 
   // Hooks to be overridden by the superclass

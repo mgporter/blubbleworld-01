@@ -53,6 +53,9 @@ export interface Selector {
   handleMouseLeaveBoard: (target: Selectable) => void;
   handleSelectionFinished: (target: Selectable) => FinishSelectionObject;
   setMaxRectangleSize: (length: number, width: number) => void;
+  getAllowStack: () => boolean;
+  setAllowStack: (val: boolean) => void;
+
   isSelectionValid: boolean;
 }
 

@@ -2,7 +2,8 @@ import {
 	EventDispatcher,
 	Quaternion,
 	Vector3,
-  Camera
+  Camera,
+  WebGLRenderer
 } from 'three';
 
 import { C } from '../Constants';
@@ -36,7 +37,7 @@ class MyFlyControls extends EventDispatcher implements Animatable {
   #camera;
   #enableLimits;
   #moveLimits;
-  #domElement;
+  #renderer;
   #tmpQuaternion;
   #status;
   #moveState;
@@ -47,13 +48,13 @@ class MyFlyControls extends EventDispatcher implements Animatable {
   #lastPosition;
   #EPS;
 
-	constructor(camera: Camera, domCanvas: HTMLCanvasElement) {
+	constructor(camera: Camera, renderer: WebGLRenderer) {
 
 		super();
 
     this.#enableLimits = C.enableCameraLimits;
 		this.#camera = camera
-		this.#domElement = domCanvas;
+		this.#renderer = renderer;
 
     // MIN: DOWN, HEIGHTMIN, LEFT
     // MAX: UP, HEIGHTMAX, RIGHT
@@ -380,11 +381,11 @@ class MyFlyControls extends EventDispatcher implements Animatable {
 
   getContainerDimensions() {
 
-    if (this.#domElement instanceof HTMLElement) {
+    if (this.#renderer.domElement instanceof HTMLElement) {
 
       return {
-        size: [ this.#domElement.offsetWidth, this.#domElement.offsetHeight ],
-        offset: [ this.#domElement.offsetLeft, this.#domElement.offsetTop ]
+        size: [ this.#renderer.domElement.offsetWidth, this.#renderer.domElement.offsetHeight ],
+        offset: [ this.#renderer.domElement.offsetLeft, this.#renderer.domElement.offsetTop ]
       };
 
     } else {

@@ -4,7 +4,7 @@ import { FinishSelectionObject, SinglePhaseSelector, TwoPhaseSelector } from "..
 import { Selectable } from "../types";
 import { SelectableInstancedMesh } from "../objects/SelectableInstancedMesh";
 import { MouseEventEmitter } from "./EventEmitter";
-import { Camera, Raycaster, Vector2 } from "three";
+import { Camera, Raycaster, Vector2, WebGLRenderer } from "three";
 
 export type Intersection = {object: Selectable};
 
@@ -24,7 +24,7 @@ export class MouseEventHandler {
 
   #camera;
   #raycaster;
-  #canvas;
+  #renderer;
   #mouse;
 
   #_onClick;
@@ -34,7 +34,7 @@ export class MouseEventHandler {
   constructor(
     camera: Camera,
     raycaster: Raycaster,
-    domCanvas: HTMLCanvasElement,
+    renderer: WebGLRenderer,
     selectableObjects?: (SelectableMesh | SelectableInstancedMesh)[],
     selector?: SinglePhaseSelector | TwoPhaseSelector,
   ) {
@@ -46,7 +46,8 @@ export class MouseEventHandler {
 
     this.#camera = camera;
     this.#raycaster = raycaster;
-    this.#canvas = domCanvas;
+    this.#renderer = renderer;
+    // this.#canvas = domCanvas;
     this.#mouse = new Vector2();
 
     this.#_onClick = this.#onClick.bind(this);
@@ -84,15 +85,15 @@ export class MouseEventHandler {
   }
 
   enable() {
-    this.#canvas.addEventListener("click", this.#_onClick);
-    this.#canvas.addEventListener("mousemove", this.#_onMousemove);
-    this.#canvas.addEventListener("mouseout", this.#_onMouseout);
+    this.#renderer.domElement.addEventListener("click", this.#_onClick);
+    this.#renderer.domElement.addEventListener("mousemove", this.#_onMousemove);
+    this.#renderer.domElement.addEventListener("mouseout", this.#_onMouseout);
   }
 
   dispose() {
-    this.#canvas.removeEventListener("click", this.#_onClick);
-    this.#canvas.removeEventListener("mousemove", this.#_onMousemove);
-    this.#canvas.removeEventListener("mouseout", this.#_onMouseout);
+    this.#renderer.domElement.removeEventListener("click", this.#_onClick);
+    this.#renderer.domElement.removeEventListener("mousemove", this.#_onMousemove);
+    this.#renderer.domElement.removeEventListener("mouseout", this.#_onMouseout);
   }
 
   setSelector(selector: SinglePhaseSelector | TwoPhaseSelector) {
@@ -228,24 +229,32 @@ export class MouseEventHandler {
 
       if (mouseoverTarget.isSelectable()) {
 
-        if (this._currentTarget) this.#selector.handleMouseLeaveTarget(this._currentTarget);
-        this._currentTarget = mouseoverTarget;
-        this.#selector.handleMouseOverValidTarget(mouseoverTarget);
+        if (!mouseoverTarget.isOccupied() || this.#selector.getAllowStack()) {
 
-      } else {
-        if (this._currentTarget != null) {
-          this.#selector.handleMouseLeaveTarget(this._currentTarget);
-          this._currentTarget = null;
-        }
+          if (this._currentTarget) this.#selector.handleMouseLeaveTarget(this._currentTarget);
+          this._currentTarget = mouseoverTarget;
+          this.#selector.handleMouseOverValidTarget(mouseoverTarget);
 
-      }
+        } 
+        else this.#mouseLeftValidTarget(); 
+
+
+      } else this.#mouseLeftValidTarget();
         
     }
 
   }
 
+  #mouseLeftValidTarget() {
+    if (this._currentTarget != null) {
+      this.#selector.handleMouseLeaveTarget(this._currentTarget);
+      this._currentTarget = null;
+    }
+  }
+
   #onMouseout() {
     this.#clearSelection();
+    MouseEventEmitter.dispatch("hover", {target: null, objects: null});
   }
 
 }
@@ -273,6 +282,8 @@ export class EmptySelector implements SinglePhaseSelector {
   handleMouseOverValidTarget(target: Selectable) {}
   handleMouseLeaveTarget(target: Selectable) {}
   handleMouseLeaveBoard(target: Selectable) {}
+  getAllowStack() {return false;}
+  setAllowStack(val: boolean) {}
   handleSelectionFinished(target: Selectable) {
     return {objects: null, target: null, data: {
       minX: 0,
@@ -324,12 +335,22 @@ export class FlexibleRectangleSelector implements TwoPhaseSelector {
   #maxLength;
   #maxWidth;
   #allowIncompleteRectangles;
+  #allowStack;
   
-  constructor(allowIncompleteRectangles?: boolean, maxLength?: number, maxWidth?: number) {
+  constructor(
+    allowIncompleteRectangles?: boolean, 
+    allowStack?: boolean,
+    maxLength?: number, 
+    maxWidth?: number) {
     this.#maxLength = maxLength || -1;
     this.#maxWidth = maxWidth || -1;
     this.#allowIncompleteRectangles = allowIncompleteRectangles == undefined ? true : allowIncompleteRectangles;
+    this.#allowStack = allowStack == undefined ? false : allowStack;
   }
+
+  getAllowStack() {return this.#allowStack;}
+
+  setAllowStack(val: boolean) {this.#allowStack = val;}
 
   /** Set to any number, or to -1 to turn off size restrictions */
   setMaxRectangleSize(length: number, width: number) {
@@ -433,10 +454,17 @@ export class FlexibleRectangleSelector implements TwoPhaseSelector {
 
     selectables
       .filter(x => x.isSelectable())
-      .forEach(x => {
-        if (this.#inBounds(x)) insideRect.push(x);
-        else outsideRect.push(x);
+      .filter(x => {          // If we don't allow stacking, then filter out all objects that are occupied
+        if (!this.#allowStack) return !x.isOccupied();
+        else return true;
       })
+      .forEach(x => {
+        if (this.#inBounds(x)) {
+          insideRect.push(x);
+        }
+        else outsideRect.push(x);
+        
+      });
 
     this.#insideRect = insideRect;
     this.#outsideRect = outsideRect;
@@ -490,12 +518,18 @@ export class FixedRectangleSelector implements SinglePhaseSelector {
   #lengthX = 1;
   #lengthY = 1;
   #totalCount;
+  #allowStack;
   
-  constructor(length: number, width: number) {
+  constructor(allowStack: boolean, length: number, width: number) {
     this.#lengthX = length;
     this.#lengthY = width;
     this.#totalCount = this.#lengthX * this.#lengthY;
+    this.#allowStack = allowStack == undefined ? false : allowStack;
   }
+
+  getAllowStack() {return this.#allowStack;}
+
+  setAllowStack(val: boolean) {this.#allowStack = val;}
 
   setMaxRectangleSize(length: number, width: number) {
     this.#lengthX = length;
@@ -511,9 +545,22 @@ export class FixedRectangleSelector implements SinglePhaseSelector {
     this.#findObjectsThatAreInsideAndOutsideRect();
 
     const selectionContainsUnselectables = this.#insideRect.length < this.#totalCount;
-    this.isSelectionValid = selectionContainsUnselectables;
 
-    if (selectionContainsUnselectables) {
+    const occupiedCells = this.#insideRect.filter(x => x.isOccupied());
+    let selectionInvalidBecauseOccupied;
+
+    selectionInvalidBecauseOccupied = occupiedCells.length > 0;
+
+    // If all the cells are occupied and we allow stacking, we still
+    // have to check if all cells are occupied by the same building
+    // before we allow a stack.
+    if (this.#allowStack && occupiedCells.length === this.#totalCount) {
+      const buildingId = occupiedCells[0].getBuildables()[0].id;
+      selectionInvalidBecauseOccupied = 
+        occupiedCells.filter(x => x.getBuildables()[0].id === buildingId).length != this.#totalCount;
+    }
+
+    if (selectionContainsUnselectables || selectionInvalidBecauseOccupied) {
       this.#addRectSelectionEffect(false);
     } else {
       this.#addRectSelectionEffect(true);

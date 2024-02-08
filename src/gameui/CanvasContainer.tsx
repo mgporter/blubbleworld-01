@@ -5,8 +5,8 @@ import { MyPerspectiveCamera } from '../objects/MyPerspectiveCamera';
 import { World } from '../World';
 import CanvasInterface from '../systems/CanvasInterface';
 
-const scene = new MyScene();
-const camera = new MyPerspectiveCamera(35, 1, 0.1, 100);
+// const scene = new MyScene();
+// const camera = new MyPerspectiveCamera(35, 1, 0.1, 100);
 const raycaster = new Raycaster();
 const createRenderer = (canvas: HTMLCanvasElement | OffscreenCanvas) => {
   const renderer = new WebGLRenderer({
@@ -18,16 +18,17 @@ const createRenderer = (canvas: HTMLCanvasElement | OffscreenCanvas) => {
   return renderer;
 }
 
+
 export default function CanvasContainer({canvasInterface}: {canvasInterface: CanvasInterface}) {
 
   return (
     <div id="canvas-container" className="w-full h-svh z-0 absolute">
       <Canvas 
-        onCreated={(state) => {canvasInterface.setState(state);}}
-        scene={scene}
-        camera={camera}
+        // onCreated={(state) => {canvasInterface.setState(state);}}
+        scene={canvasInterface.scene}
+        camera={canvasInterface.camera}
+        raycaster={canvasInterface.raycaster}
         gl={createRenderer}
-        raycaster={raycaster}
         flat={true}>
         <World canvasInterface={canvasInterface} />
       </Canvas>
