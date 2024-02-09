@@ -5,6 +5,7 @@ import { Selectable } from "../types";
 import { SelectableInstancedMesh } from "../objects/SelectableInstancedMesh";
 import { MouseEventEmitter } from "./EventEmitter";
 import { Camera, Raycaster, Vector2, WebGLRenderer } from "three";
+import { BuildableType, Buildables } from "../Buildables";
 
 export type Intersection = {object: Selectable};
 
@@ -65,6 +66,10 @@ export class MouseEventHandler {
     return (selector as TwoPhaseSelector).handleSelectionMode != undefined;
   }
 
+  static isConnectingSelector(selector: SinglePhaseSelector | TwoPhaseSelector): selector is ConnectingSelector {
+    return (selector as ConnectingSelector).isConnectingSelector === true;
+  }
+
   /* Calls the callback function on each items in the array. If an instancedMesh is present, than
   each of that mesh's SelectionObjects will have the function called on them too. This function is
   specifically for calling on the "objects" array. */
@@ -118,14 +123,12 @@ export class MouseEventHandler {
 
   #onClick() {
 
-    if (this._currentTarget) {   // If the mouse is over a clickable target
+    if (this._currentTarget && this.#selector.isSelectionValid) {   // If the mouse is over a clickable target
 
       if (inSelectionMode) {
 
-        if (this.#selector.isSelectionValid) {
-          MouseEventEmitter.dispatch("selectionFinished", this.#selector.handleSelectionFinished(this._currentTarget));
-          this.#clearSelection();
-        }
+        MouseEventEmitter.dispatch("selectionFinished", this.#selector.handleSelectionFinished(this._currentTarget));
+        this.#clearSelection();
 
       } else {
 
@@ -136,10 +139,9 @@ export class MouseEventHandler {
         } else {
 
           // We will always end up here for Single Phase Selectors
-          if (this.#selector.isSelectionValid) {
-            MouseEventEmitter.dispatch("selectionFinished", this.#selector.handleSelectionFinished(this._currentTarget));
-            this.#clearSelection();
-          }
+          MouseEventEmitter.dispatch("selectionFinished", this.#selector.handleSelectionFinished(this._currentTarget));
+          this.#clearSelection();
+          
         }
 
         this._currentTarget = null;
@@ -229,15 +231,9 @@ export class MouseEventHandler {
 
       if (mouseoverTarget.isSelectable()) {
 
-        if (!mouseoverTarget.isOccupied() || this.#selector.getAllowStack()) {
-
-          if (this._currentTarget) this.#selector.handleMouseLeaveTarget(this._currentTarget);
-          this._currentTarget = mouseoverTarget;
-          this.#selector.handleMouseOverValidTarget(mouseoverTarget);
-
-        } 
-        else this.#mouseLeftValidTarget(); 
-
+        if (this._currentTarget) this.#selector.handleMouseLeaveTarget(this._currentTarget);
+        this._currentTarget = mouseoverTarget;
+        this.#selector.handleMouseOverValidTarget(mouseoverTarget);
 
       } else this.#mouseLeftValidTarget();
         
@@ -282,8 +278,7 @@ export class EmptySelector implements SinglePhaseSelector {
   handleMouseOverValidTarget(target: Selectable) {}
   handleMouseLeaveTarget(target: Selectable) {}
   handleMouseLeaveBoard(target: Selectable) {}
-  getAllowStack() {return false;}
-  setAllowStack(val: boolean) {}
+  allowStacking() {return false;}
   handleSelectionFinished(target: Selectable) {
     return {objects: null, target: null, data: {
       minX: 0,
@@ -309,7 +304,12 @@ export class EmptySelector implements SinglePhaseSelector {
 
 
 
-
+interface FlexibleRectangleSelectorProps {
+  buildableMaxHeight?: number,
+  allowIncompleteRectangles?: boolean,
+  maxLength?: number, 
+  maxWidth?: number,
+}
 
 /** FlexibleRectangleSelector allows the user to select all
  * items within a flexibly-sized rectangle. A max size can be set,
@@ -332,25 +332,17 @@ export class FlexibleRectangleSelector implements TwoPhaseSelector {
 
   #insideRect: Selectable[] = [];
   #outsideRect: Selectable[] = [];
+  #allowIncompleteRectangles;
   #maxLength;
   #maxWidth;
-  #allowIncompleteRectangles;
-  #allowStack;
+  #buildableMaxHeight;
   
-  constructor(
-    allowIncompleteRectangles?: boolean, 
-    allowStack?: boolean,
-    maxLength?: number, 
-    maxWidth?: number) {
-    this.#maxLength = maxLength || -1;
-    this.#maxWidth = maxWidth || -1;
+  constructor({buildableMaxHeight, allowIncompleteRectangles, maxLength, maxWidth}: FlexibleRectangleSelectorProps) {
+    this.#buildableMaxHeight = (buildableMaxHeight && buildableMaxHeight > 1) ? buildableMaxHeight : 1;
+    this.#maxLength = (maxLength && maxLength > 1) ? maxLength : -1;
+    this.#maxWidth = (maxWidth && maxWidth > 1) ? maxWidth : -1;
     this.#allowIncompleteRectangles = allowIncompleteRectangles == undefined ? true : allowIncompleteRectangles;
-    this.#allowStack = allowStack == undefined ? false : allowStack;
   }
-
-  getAllowStack() {return this.#allowStack;}
-
-  setAllowStack(val: boolean) {this.#allowStack = val;}
 
   /** Set to any number, or to -1 to turn off size restrictions */
   setMaxRectangleSize(length: number, width: number) {
@@ -362,8 +354,17 @@ export class FlexibleRectangleSelector implements TwoPhaseSelector {
     this.#allowIncompleteRectangles = val;
   }
 
+  allowStacking() {return this.#buildableMaxHeight > 1;}
+
   handleMouseOverValidTarget(target: Selectable) {
-    target.hover();
+    if (!target.isOccupied() || this.allowStacking()) {
+      target.hover(false);
+      this.isSelectionValid = true;
+    } else {
+      target.hover(true);
+      this.isSelectionValid = false;
+    }
+
   }
 
   handleMouseOverAnyTarget(target: Selectable) {}
@@ -453,11 +454,7 @@ export class FlexibleRectangleSelector implements TwoPhaseSelector {
     const outsideRect: Selectable[] = [];
 
     selectables
-      .filter(x => x.isSelectable())
-      .filter(x => {          // If we don't allow stacking, then filter out all objects that are occupied
-        if (!this.#allowStack) return !x.isOccupied();
-        else return true;
-      })
+      .filter(x => x.isSelectable() && x.getBuildables().length < this.#buildableMaxHeight)
       .forEach(x => {
         if (this.#inBounds(x)) {
           insideRect.push(x);
@@ -496,6 +493,11 @@ export class FlexibleRectangleSelector implements TwoPhaseSelector {
 
 
 
+interface FixedRectangleSelectorProps {
+  buildableMaxHeight?: number, 
+  length?: number, 
+  width?: number,
+}
 
 
 /** FixedRectangleSelector is a basic selector that allows the
@@ -515,27 +517,25 @@ export class FixedRectangleSelector implements SinglePhaseSelector {
   #insideRect: Selectable[] = [];
   #outsideRect: Selectable[] = [];
 
-  #lengthX = 1;
-  #lengthY = 1;
+  #lengthX;
+  #lengthY;
   #totalCount;
-  #allowStack;
+  #buildableMaxHeight;
   
-  constructor(allowStack: boolean, length: number, width: number) {
-    this.#lengthX = length;
-    this.#lengthY = width;
+  constructor({buildableMaxHeight, length, width}: FixedRectangleSelectorProps) {
+    this.#lengthX = (length && length > 1) ? length : 1;
+    this.#lengthY = (width && width > 1) ? width : 1;
     this.#totalCount = this.#lengthX * this.#lengthY;
-    this.#allowStack = allowStack == undefined ? false : allowStack;
+    this.#buildableMaxHeight = (buildableMaxHeight && buildableMaxHeight > 1) ? buildableMaxHeight : 1;
   }
-
-  getAllowStack() {return this.#allowStack;}
-
-  setAllowStack(val: boolean) {this.#allowStack = val;}
 
   setMaxRectangleSize(length: number, width: number) {
     this.#lengthX = length;
     this.#lengthY = width;
     this.#totalCount = this.#lengthX * this.#lengthY;
   }
+
+  allowStacking() {return this.#buildableMaxHeight > 1;}
 
   handleMouseOverValidTarget(target: Selectable) {}
 
@@ -551,10 +551,15 @@ export class FixedRectangleSelector implements SinglePhaseSelector {
 
     selectionInvalidBecauseOccupied = occupiedCells.length > 0;
 
-    // If all the cells are occupied and we allow stacking, we still
-    // have to check if all cells are occupied by the same building
-    // before we allow a stack.
-    if (this.#allowStack && occupiedCells.length === this.#totalCount) {
+    // If we allow stacking (maxHeight > 1) AND
+    // all the cells are occupied with a building AND
+    // the building on the cell is not yet at maxHeight, then
+    // we can allow a stack, but only if the cells are 
+    // occupied by the same building.
+    if (this.#buildableMaxHeight > 1 && 
+      occupiedCells.length === this.#totalCount &&
+      occupiedCells[0].getBuildables().length < this.#buildableMaxHeight) {
+
       const buildingId = occupiedCells[0].getBuildables()[0].id;
       selectionInvalidBecauseOccupied = 
         occupiedCells.filter(x => x.getBuildables()[0].id === buildingId).length != this.#totalCount;
@@ -643,5 +648,93 @@ export class FixedRectangleSelector implements SinglePhaseSelector {
     const coord = obj.getCoordinates();
     return coord.x >= this.#minX && coord.x <= this.#maxX && coord.y >= this.#minY && coord.y <= this.#maxY;
   }
+
+}
+
+
+
+
+
+interface ConnectingSelectorProps {
+  buildableMaxHeight?: number;
+  buildingType: BuildableType;
+  maxDepth: number;
+}
+
+/* Connecting selector allows a building to connect onto
+existing buildings by detecting the cells around the selection */
+export class ConnectingSelector extends FixedRectangleSelector {
+
+  #buildingType;
+  #maxDepth;
+  #selectablesWithSameBuilding: Selectable[];
+  isConnectingSelector = true;
+
+  constructor({buildableMaxHeight, buildingType, maxDepth}: ConnectingSelectorProps) {
+    super({buildableMaxHeight, length: 1, width: 1});
+    this.#buildingType = buildingType;
+    this.#selectablesWithSameBuilding = [];
+    this.#maxDepth = maxDepth;
+  }
+
+  // Override
+  handleMouseOverAnyTarget(target: Selectable) {
+    super.handleMouseOverAnyTarget(target);
+    if (this.isSelectionValid === false) return;
+
+    this.#refreshCellsWithSameBuilding();
+
+    let curDepth = 0;
+    const queue: Selectable[] = [target];
+
+    while (queue.length > 0 && curDepth < this.#maxDepth) {
+
+      let levelSize = queue.length;
+
+      while (levelSize-- > 0) {
+        const currentCell = queue.shift();
+        const adjCells = this.#selectablesWithSameBuilding.filter(x => this.#isAdjacentTo(currentCell!, x));
+  
+        for (const cell of adjCells) {
+          cell.hover();
+          queue.push(cell);
+          this.#selectablesWithSameBuilding.splice(this.#selectablesWithSameBuilding.indexOf(cell), 1);
+        }
+
+      }
+
+      curDepth++;
+
+    }
+
+  }
+
+  #isAdjacentTo(target: Selectable, cell: Selectable) {
+    const testC = cell.getCoordinates();
+    const targetC = target.getCoordinates();
+    return (testC.y === targetC.y && testC.x <= targetC.x + 1 && testC.x >= targetC.x - 1) ||
+      (testC.x === targetC.x && testC.y <= targetC.y + 1 && testC.y >= targetC.y - 1);
+  }
+
+  #refreshCellsWithSameBuilding() {
+    this.#selectablesWithSameBuilding = [];
+
+    this.#selectablesWithSameBuilding = 
+      selectables.filter(x => x.isOccupied() && x.getBuildables()[0].buildable.keyName === this.#buildingType);
+  }
+
+  static getConnectingObjects(target: Selectable, objects: Selectable[]) {
+    const targetC = target.getCoordinates();
+    return objects.map(cell => {
+      return {
+        offsetX: cell.getCoordinates().x - targetC.x,
+        offsetY: cell.getCoordinates().y - targetC.y,
+        cell: cell,
+      }
+    }).filter(cellObj => (Math.abs(cellObj.offsetX) <= 1 && cellObj.offsetY === 0) ||
+      (Math.abs(cellObj.offsetY) <= 1 && cellObj.offsetX === 0))
+      .filter(cellObj => cellObj.cell != target);
+  }
+
 
 }

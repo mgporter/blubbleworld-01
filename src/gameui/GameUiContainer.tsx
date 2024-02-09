@@ -55,9 +55,9 @@ export default function GameUiContainer({canvasInterface}: GameUiContainerProps)
     }
   }, [onBuildingPlace]);
 
-  useEffect(() => {
-    // canvasInterface.placeBuilding("skyscraper", 1, 1, 1);
-  }, [canvasInterface]);
+  // useEffect(() => {
+  //   canvasInterface.placeBuilding(Buildables["tent"], 1, 1, 1);
+  // }, [canvasInterface]);
 
 
   function placeBuildingOnCanvas() {

@@ -3,7 +3,7 @@ import { Lights } from "../objects/Lights";
 import { Board } from "./Board";
 import { Animatable, FinishSelectionObject, Selectable, Selector } from "../types";
 import { MyFlyControls } from "./MyFlyControls";
-import { EmptySelector, MouseEventHandler } from "./MouseEventHandlers";
+import { ConnectingSelector, EmptySelector, MouseEventHandler } from "./MouseEventHandlers";
 import { SelectableMesh } from "../objects/SelectableMesh";
 import { SelectableInstancedMesh } from "../objects/SelectableInstancedMesh";
 import { MyScene } from "../objects/MyScene";
@@ -138,36 +138,53 @@ export default class CanvasInterface {
 
     if (data.objects == null) return;
 
-    let id: number;
-
     if (MouseEventHandler.isTwoPhaseSelector(building.selector)) {
-      // This adds the mesh to the board
       data.objects.forEach(x => {
-        id = this.#addBuildableToBoard(x, building);
-        x.addBuildable(building, id);
+        const model = this.#addBuildableToBoard(x, building);
+        x.addBuildable(building, model.id);
       });
+    } 
 
-    } else {
+    else if (MouseEventHandler.isConnectingSelector(building.selector)) {
       if (data.target == null) return;
-      id = this.#addBuildableToBoard(data.target, building);
-      data.objects.forEach(x => x.addBuildable(building, id));
+      const model = this.#addBuildableToBoard(data.target, building);
+      data.target.addBuildable(building, model.id);
+
+      const adjCells = ConnectingSelector.getConnectingObjects(data.target, data.objects);
+      
+      for (const adjCell of adjCells) {
+
+        const connectorModel = this.#modelInterface.getModel(`${building.keyName}_Connector`);
+        console.log(adjCell.offsetX, adjCell.offsetY);
+        connectorModel.position.x = -(adjCell.offsetX * 0.5);
+        connectorModel.position.y = 0;
+        connectorModel.position.z = (adjCell.offsetY * 0.5);
+        model.add(connectorModel);
+      }
+
+    }
+    
+    else {
+      if (data.target == null) return;
+      const model = this.#addBuildableToBoard(data.target, building);
+      data.objects.forEach(x => x.addBuildable(building, model.id));
     }
 
   }
 
-  #addBuildableToBoard(mesh: Selectable, building: Buildable): number {
+  #addBuildableToBoard(mesh: Selectable, building: Buildable) {
     const coordinates = mesh.getCoordinates();
 
-    const level = mesh.getBuildables().length + 1;
+    const level = mesh.getBuildables().length;
 
     const model = this.#modelInterface.getModel(building.keyName);
     model.position.x += CTr.boardToMouse(coordinates.y);
-    model.position.y += ((level - 1) * building.mesh.heightIncrementor);
+    model.position.y += (level * building.mesh.heightIncrementor);
     model.position.z += CTr.boardToMouse(coordinates.x);
 
     this.#scene.add(model);
 
-    return model.id;
+    return model;
 
   }
 
