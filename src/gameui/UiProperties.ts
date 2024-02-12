@@ -1,0 +1,1 @@
+export const UiProps = " bg-slate-800/50 text-white pointer-events-auto rounded-2xl ";

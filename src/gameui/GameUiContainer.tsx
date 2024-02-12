@@ -3,11 +3,13 @@ import BuildMenu from './BuildMenu';
 import ToolTipMouseOverCanvas from './ToolTipMouseOverCanvas';
 import QuestionDialogBox from './QuestionDialogBox';
 import { MouseEventEmitter } from '../systems/EventEmitter';
-import { Buildable, BuildableType, Buildables } from '../Buildables';
+import { Buildable, BuildableType, BuildableUserData, Buildables } from '../Buildables';
 import { FinishSelectionObject, Selectable } from '../types';
 import CanvasInterface from '../systems/CanvasInterface';
-import { Vector2, Vector3 } from 'three';
-import CTr from '../systems/CoordinateTranslator';
+import { useStore } from './Store';
+import UiArea from './UiArea';
+import { UiProps } from './UiProperties';
+import TopBar from './TopBar';
 import { MouseEventHandler } from '../systems/MouseEventHandlers';
 
 
@@ -17,12 +19,14 @@ interface GameUiContainerProps {
 
 export default function GameUiContainer({canvasInterface}: GameUiContainerProps) {
 
+  const spendMoney = useStore((state) => state.spendMoney);
+  const money = useStore((state) => state.money);
+
   const [selectedBuilding, setSelectedBuilding] = useState<BuildableType>("tent");
   const [questionDialogData, setQuestionDialogData] = useState<FinishSelectionObject>(({} as FinishSelectionObject));
   const [showQuestionDialog, setShowQuestionDialog] = useState(false);
   const [buildMenuEnabled, setBuildMenuEnabled] = useState(true);
   const [showToolTips, setShowToolTips] = useState(true);
-  // const [mouseCoordinates, setMouseCoordinates] = useState(new Vector2());
 
   const onBuildingSelect = useCallback((buildingType: BuildableType) => {
     setSelectedBuilding(buildingType);
@@ -31,7 +35,6 @@ export default function GameUiContainer({canvasInterface}: GameUiContainerProps)
   }, [canvasInterface]);
 
   const onBuildingPlace = useCallback((result: FinishSelectionObject) => {
-    // setMouseCoordinates(new Vector2(result.target?.getCoordinates().x, result.target?.getCoordinates().y));
     setQuestionDialogData(result);
     setShowQuestionDialog(true);
     setBuildMenuEnabled(false);
@@ -63,25 +66,59 @@ export default function GameUiContainer({canvasInterface}: GameUiContainerProps)
   function placeBuildingOnCanvas() {
     handleCloseQuestionDialog();
 
+    const building = Buildables[selectedBuilding];
+
     if (!(questionDialogData.objects && questionDialogData.target)) return;
     
     switch(selectedBuilding) {
 
-      case "bulldozer": {
-        canvasInterface.bulldozeMountain(questionDialogData.objects);
+      case "bulldoze": {
+
+        if (purchaseIfSufficientFunds(Buildables[selectedBuilding].price, 1)) {
+          canvasInterface.bulldozeMountain(questionDialogData.objects);
+        }
+
         break;
       }
 
       case "demolish": {
-        canvasInterface.demolishBuildings(questionDialogData.objects);
+
+        const price = questionDialogData.target.getBuildables().length > 0 ?
+          (questionDialogData.target.getBuildables()[0].userData as BuildableUserData).price : 0;
+
+        if (purchaseIfSufficientFunds(price, 1)) {
+          canvasInterface.demolishBuildings(questionDialogData.objects);
+        }
+
         break;
       }
 
+      // For all buildings
       default: {
-        canvasInterface.placeBuilding(Buildables[selectedBuilding], questionDialogData.objects, questionDialogData.target);
+
+        const quantityBought = MouseEventHandler.isTwoPhaseSelector(building.selector) ?
+          questionDialogData.objects.length : 1;
+        
+        if (purchaseIfSufficientFunds(Buildables[selectedBuilding].price, quantityBought)) {
+          canvasInterface.placeBuilding(
+            Buildables[selectedBuilding], 
+            questionDialogData.objects, 
+            questionDialogData.target);
+        }
+        
         break;
       }
     }
+  }
+
+  function purchaseIfSufficientFunds(price: number, quantity: number) {
+
+    const totalPrice = price * quantity;
+    if (totalPrice <= money) {
+      spendMoney(totalPrice);
+      return true;
+    } else return false;
+
   }
 
 
@@ -105,9 +142,8 @@ export default function GameUiContainer({canvasInterface}: GameUiContainerProps)
           handleCloseQuestionDialog={handleCloseQuestionDialog}
           placeBuildingOnCanvas={placeBuildingOnCanvas} />}
 
-        <div className='topbar grow-0 h-12 m-2'>
+        <TopBar />
 
-        </div>
         <div className='bottombar grow-0 h-12 m-2 flex items-center justify-center'>
           {showToolTips &&<ToolTipMouseOverCanvas />}
         </div>

@@ -17,7 +17,7 @@ class InstancedGrassCube extends InstancedGridCube {
     super(length || 1, width || 1, depth || 1, count, options);
 
     this.name = "InstancedGrassCube";
-    this.displayName = "Grass";
+    this.displayName = "grass";
   }
 
 }

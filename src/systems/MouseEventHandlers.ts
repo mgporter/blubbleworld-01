@@ -607,7 +607,6 @@ export class FixedRectangleSelector extends BaseSelector implements SinglePhaseS
   #lengthY;
   #totalCount;
   #buildableMaxHeight;
-  #currentHeight;
   
   constructor({buildableMaxHeight, length, width, meshesToSelect, meshesToHover}: FixedRectangleSelectorProps) {
     super(meshesToSelect, meshesToHover);
@@ -615,7 +614,6 @@ export class FixedRectangleSelector extends BaseSelector implements SinglePhaseS
     this.#lengthY = (width && width > 1) ? width : 1;
     this.#totalCount = this.#lengthX * this.#lengthY;
     this.#buildableMaxHeight = (buildableMaxHeight && buildableMaxHeight > 1) ? buildableMaxHeight : 1;
-    this.#currentHeight = 0;
   }
 
 
@@ -674,24 +672,20 @@ export class FixedRectangleSelector extends BaseSelector implements SinglePhaseS
 
   handleSelectionFinished(target: Selectable): FinishSelectionObject {
 
-    const selection: Selectable[] = [];
-
-    selectables
-      .filter(x => x.isSelectedOrHovered())
-      .forEach(x => selection.push(x));
+    const currentHeight = target.getBuildables().length;
 
     return {
-      objects: selection,
+      objects: this.insideRect,
       target: target,
       data: {
-        minX: 1,
-        maxX: 1,
-        minY: 1,
-        maxY: this.#currentHeight,
-        lengthX: 1,
-        lengthY: this.#currentHeight,
+        minX: this.#minX,
+        maxX: this.#maxX,
+        minY: this.#minY,
+        maxY: this.#maxY,
+        lengthX: this.#lengthX,
+        lengthY: this.#lengthY,
         totalArea: this.#totalCount,
-        validCount: this.#currentHeight,
+        validCount: 1,
       }
     };
   }
@@ -746,14 +740,16 @@ export class FixedRectangleSelector extends BaseSelector implements SinglePhaseS
 
 interface ConnectingSelectorProps {
   buildableMaxHeight?: number;
-  buildingType: BuildableType;
   maxDepth: number;
+  buildingType?: BuildableType;
   meshesToSelect?: SelectableProperties,
   meshesToHover?: SelectableProperties,
 }
 
 /* Connecting selector allows a building to connect onto
-existing buildings by detecting the cells around the selection */
+existing buildings by detecting the cells around the selection. If
+We do not pass in a building type, then the connecting selector
+will only find buildings of the exact same ID. */
 export class ConnectingSelector extends FixedRectangleSelector {
 
   #buildingType;
@@ -775,6 +771,9 @@ export class ConnectingSelector extends FixedRectangleSelector {
     maxX: number = Number.MIN_SAFE_INTEGER, 
     minY: number = Number.MAX_SAFE_INTEGER, 
     maxY: number = Number.MIN_SAFE_INTEGER;
+
+    if (!this.#selectablesWithSameBuilding.includes(target))
+      this.#selectablesWithSameBuilding.push(target);
 
     this.#selectablesWithSameBuilding
       .filter(x => x.isSelectedOrHovered())
@@ -812,8 +811,14 @@ export class ConnectingSelector extends FixedRectangleSelector {
     super.init(objectsToUpdate);
 
     // Update the array of cells that have the same building
-    this.#selectablesWithSameBuilding = 
-      selectables.filter(x => x.isOccupied() && x.getBuildables()[0].name === this.#buildingType);
+    if (this.#buildingType) {
+      this.#selectablesWithSameBuilding = 
+        selectables.filter(x => x.isOccupied() && x.getBuildables()[0].name === this.#buildingType);
+    } else {
+      this.#selectablesWithSameBuilding = 
+        selectables.filter(x => x.isOccupied());
+    }
+
   }
 
   // Override
@@ -826,7 +831,20 @@ export class ConnectingSelector extends FixedRectangleSelector {
 
     if (this.isSelectionValid === false) return;
 
-    const sameBuildingCopy = [...this.#selectablesWithSameBuilding];
+    let sameBuildingCopy : Selectable[];
+    if (this.#buildingType) {
+      sameBuildingCopy = [...this.#selectablesWithSameBuilding];
+    } else {
+
+      if (target.getBuildables().length > 0) {
+        sameBuildingCopy = 
+          this.#selectablesWithSameBuilding
+            .filter(x => x.getBuildables()[0].id === target.getBuildables()[0].id);
+      } else {
+        sameBuildingCopy = [];
+      }
+
+    }
 
     let curDepth = 0;
     const queue: Selectable[] = [target];

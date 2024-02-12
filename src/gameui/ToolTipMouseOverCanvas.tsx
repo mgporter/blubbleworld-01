@@ -3,6 +3,7 @@ import { MouseEventEmitter } from "../systems/EventEmitter";
 import { Selectable } from "../types";
 import CTr from "../systems/CoordinateTranslator";
 import { BuildableUserData } from "../Buildables";
+import { capitalize } from "../Utils";
 
 const displayGridName = (selectable: Selectable) => {
   const displayName = selectable.getMesh().displayName;
@@ -10,9 +11,12 @@ const displayGridName = (selectable: Selectable) => {
 
   // userData is defined as type Record<string, any> by Three.js, so we need a cast here
   const buildingName = selectable.getBuildables().length > 0 ?
-    ` with ${(selectable.getBuildables()[0].userData as BuildableUserData).displayName.toLowerCase()}` : "";
+    ` with ${(selectable.getBuildables()[0].userData as BuildableUserData).displayName}` : "";
 
-  return `${displayName}${buildingName} at (${CTr.boardToMouse(coord.x)}, ${CTr.boardToMouse(coord.y)})`;
+  const string = 
+    `${displayName}${buildingName} at (${CTr.boardToMouse(coord.x)}, ${CTr.boardToMouse(coord.y)})`;
+  
+  return capitalize(string);
 
 };
 
@@ -29,12 +33,11 @@ export default function ToolTipMouseOverCanvas() {
       }
 
       const text = displayGridName(selectionObj.target!);
+      setMouseHoverTip(text);
 
       if (selectionObj.target!.isSelectable()) {
-        setMouseHoverTip(text);
         setTextStyle({color: "rgb(230, 230, 230)", fontWeight: "400"});
       } else {
-        setMouseHoverTip("Unselectable " + text);
         setTextStyle({color: "rgb(248, 113, 113)", fontWeight: "500"});
       }
 

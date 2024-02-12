@@ -9,6 +9,10 @@ const C = {
   mountainHeightMultiplier: 0.6,         // How tall the mountains are
   worldGenerationSeed: null,             // A seed can be passed to generate consistent terrain, or null for none
   worldGenerationNoise: noiseLevel.LIGHT,    // Adds noise to the world generation algorithm
+  currencyName: "credit",
+  currencyNamePlural: "credits",
+  peopleName: "blubble",
+  peopleNamePlural: "blubbles",
 }
 
 export { C };

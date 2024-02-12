@@ -225,7 +225,7 @@ export default class CanvasInterface {
 
   demolishBuildings(selectables: Selectable[]) {
     selectables.forEach(x => {
-      const model = x.getBuildables()[0];
+      const model = x.getBuildables()[x.getBuildables().length - 1];
       this.#removeBuilding(model, x);
     })
 
@@ -238,7 +238,7 @@ export default class CanvasInterface {
         .forEach(x => x.parent?.remove(x));
     }
     mesh.parent?.remove(mesh);
-    if (selectable) selectable.getBuildables().shift();
+    if (selectable) selectable.getBuildables().pop();
   }
 
   clearWorld() {

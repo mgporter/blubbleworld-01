@@ -47,13 +47,13 @@ export type Buildable = {
   connector: MeshInfo | null,
 }
 
-export type BuildableType = "house" | "hotel" | "tent" | "skyscraper" | "bulldozer" | "demolish";
+export type BuildableType = "house" | "hotel" | "tent" | "skyscraper" | "bulldoze" | "demolish";
 
 type BuildableList = Record<BuildableType, Buildable>;
 
 export const Buildables: BuildableList = {
   tent: {
-    displayName: "Tent",
+    displayName: "tent",
     keyName: "tent",
     plural: "tents",
     price: 10,
@@ -81,7 +81,7 @@ export const Buildables: BuildableList = {
   },
 
   house: {
-    displayName: "House",
+    displayName: "house",
     keyName: "house",
     plural: "houses",
     price: 35,
@@ -109,7 +109,7 @@ export const Buildables: BuildableList = {
   },
 
   hotel: {
-    displayName: "Hotel",
+    displayName: "hotel",
     keyName: "hotel",
     plural: "hotels",
     price: 60,
@@ -142,7 +142,7 @@ export const Buildables: BuildableList = {
   },
 
   skyscraper: {
-    displayName: "Skyscraper",
+    displayName: "skyscraper",
     keyName: "skyscraper",
     plural: "skyscrapers",
     price: 225,
@@ -168,19 +168,18 @@ export const Buildables: BuildableList = {
   },
 
   demolish: {
-    displayName: "Demolish",
+    displayName: "demolish",
     keyName: "demolish",
     plural: "demolish",
     price: 0,
     icon: demolishIcon,
     iconAspectRatio: 1.3196,
     capacity: 0,
-    maxHeight: 0,
+    maxHeight: Number.MAX_SAFE_INTEGER,
     description: "Demolishing a building allows you to build something new there. The cost to demolish is the same as the building you are demolishing.",
-    selector: new FixedRectangleSelector({
+    selector: new ConnectingSelector({
       buildableMaxHeight: Number.MAX_SAFE_INTEGER, 
-      length: 1, 
-      width: 1,
+      maxDepth: Number.MAX_SAFE_INTEGER,
       meshesToSelect: {isOccupied: true},
       meshesToHover: {canPlaceBuildable: true},
     }),
@@ -194,21 +193,21 @@ export const Buildables: BuildableList = {
     connector: null,
   },
 
-  bulldozer: {
-    displayName: "Bulldozer",
-    keyName: "bulldozer",
-    plural: "bulldozers",
+  bulldoze: {
+    displayName: "bulldoze",
+    keyName: "bulldoze",
+    plural: "bulldoze",
     price: 50,
     icon: bulldozerIcon,
     iconAspectRatio: 1.8156,
     capacity: 0,
-    maxHeight: 0,
+    maxHeight: 1,
     description: "Use the bulldozer to flatten mountains, allowing you to build on them.",
     selector: new FixedRectangleSelector({
       buildableMaxHeight: Number.MAX_SAFE_INTEGER, 
       length: 1, 
       width: 1, 
-      meshesToSelect: {name: "InstancedMountainCube", canPlaceBuildable: false},
+      meshesToSelect: {name: "InstancedMountainCube", canPlaceBuildable: false, isOccupied: false},
       meshesToHover: {canPlaceBuildable: true},
     }),
     mesh: {

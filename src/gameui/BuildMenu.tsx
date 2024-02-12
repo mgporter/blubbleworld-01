@@ -4,6 +4,8 @@ import buildBuildingIcon from '../images/Building-simple_house_256.png';
 import { useState } from "react";
 import { BuildableType, Buildables } from "../Buildables";
 import { motion } from "framer-motion";
+import { capitalize } from "../Utils";
+import { UiProps } from "./UiProperties";
 
 interface BuildMenuProps {
   onBuildingSelect: (buildingType: BuildableType) => void,
@@ -25,7 +27,7 @@ export default function BuildMenu({onBuildingSelect, buildMenuEnabled}: BuildMen
 
   const otherOptions = [
     Buildables.demolish,
-    Buildables.bulldozer,
+    Buildables.bulldoze,
   ];
 
   if (showMenu) {
@@ -46,8 +48,7 @@ export default function BuildMenu({onBuildingSelect, buildMenuEnabled}: BuildMen
 
   return (
     <div className="flex w-96 pointer-events-none items-start">
-    <motion.div className="m-2 flex flex-col bg-slate-800/50 min-h-28 min-w-24
-      text-white p-4 pointer-events-auto rounded-2xl"
+    <motion.div className={UiProps + "m-2 flex flex-col min-h-28 min-w-24 p-4"}
       animate={{width: menuWidth, height: menuHeight}} transition={{type: "just"}}
       layoutId="buildMenuOpenCloseAction"
       initial={false}>
@@ -64,7 +65,6 @@ export default function BuildMenu({onBuildingSelect, buildMenuEnabled}: BuildMen
               className="font-extrabold text-yellow-500 self-center grow text-center text-xl tracking-wide">
                 Build Menu</motion.div>
         </div>
-        {/* <h1 className={showMenu ? "" : "hidden " + 'text-2xl mb-2 text-center grow'}>Build Menu</h1> */}
       </div>
       
       <motion.div layoutId="buildMenuOpenCloseAction"
@@ -77,7 +77,7 @@ export default function BuildMenu({onBuildingSelect, buildMenuEnabled}: BuildMen
               <NavSelectionOption 
               onClickHandler={() => {onBuildingSelect(b.keyName); setShowMenu(false);}} 
               img={b.icon} 
-              mainText={b.displayName} 
+              mainText={capitalize(b.displayName)} 
               subText={`$${b.price}`} />
             </li>
           ))}
@@ -89,7 +89,7 @@ export default function BuildMenu({onBuildingSelect, buildMenuEnabled}: BuildMen
               <NavSelectionOption 
               onClickHandler={() => {onBuildingSelect(b.keyName); setShowMenu(false);}} 
               img={b.icon} 
-              mainText={b.displayName} 
+              mainText={capitalize(b.displayName)} 
               subText={`${b.price === 0 ? "Varies" : "$"+b.price}`} />
             </li>
           ))}
