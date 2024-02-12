@@ -62,8 +62,26 @@ export default function GameUiContainer({canvasInterface}: GameUiContainerProps)
 
   function placeBuildingOnCanvas() {
     handleCloseQuestionDialog();
-    if (questionDialogData.objects == null) return;
-    canvasInterface.placeBuilding(Buildables[selectedBuilding], questionDialogData);
+
+    if (!(questionDialogData.objects && questionDialogData.target)) return;
+    
+    switch(selectedBuilding) {
+
+      case "bulldozer": {
+        canvasInterface.bulldozeMountain(questionDialogData.objects);
+        break;
+      }
+
+      case "demolish": {
+        canvasInterface.demolishBuildings(questionDialogData.objects);
+        break;
+      }
+
+      default: {
+        canvasInterface.placeBuilding(Buildables[selectedBuilding], questionDialogData.objects, questionDialogData.target);
+        break;
+      }
+    }
   }
 
 

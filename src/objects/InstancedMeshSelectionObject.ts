@@ -39,6 +39,10 @@ class InstancedMeshSelectionObject {
     return this.#instancedMeshRef;
   }
 
+  getIndex() {
+    return this.#index;
+  }
+
   getCoordinates() {
     return this.#coordinates;
   }

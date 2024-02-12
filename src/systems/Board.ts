@@ -90,7 +90,7 @@ class Board {
           const matrixCopy = matrix.clone();
           
           const ratio = (perlinValue - grassBreakpoint) / (this.#noiseMaker.getMax() - grassBreakpoint);
-          const scaleFactor = Math.max((ratio * C.mountainHeightMultiplier) + 1, 1.1);
+          const scaleFactor = Math.max((ratio * C.mountainHeightMultiplier) + 1.1, 1.2);
 
           matrixCopy.scale(new Vector3(1, 1, scaleFactor));
           instancedMountainCube.setMatrixAt(mountainCubeCount, matrixCopy);

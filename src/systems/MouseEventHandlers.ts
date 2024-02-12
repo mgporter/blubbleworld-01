@@ -368,16 +368,19 @@ export class EmptySelector extends BaseSelector implements SinglePhaseSelector {
   handleMouseLeaveBoard(target: Selectable) {}
   allowStacking() {return false;}
   handleSelectionFinished(target: Selectable) {
-    return {objects: null, target: null, data: {
-      minX: 0,
-      maxX: 0,
-      minY: 0,
-      maxY: 0,
-      lengthX: 0,
-      lengthY: 0,
-      totalArea: 0,
-      validCount: 0,
-    }}
+    return {
+      objects: null, 
+      target: null, 
+      data: {
+        minX: 0,
+        maxX: 0,
+        minY: 0,
+        maxY: 0,
+        lengthX: 0,
+        lengthY: 0,
+        totalArea: 0,
+        validCount: 0,
+      }}
   }
   setMaxRectangleSize(length: number, width: number) {}
 
@@ -773,7 +776,7 @@ export class ConnectingSelector extends FixedRectangleSelector {
     minY: number = Number.MAX_SAFE_INTEGER, 
     maxY: number = Number.MIN_SAFE_INTEGER;
 
-    selectables
+    this.#selectablesWithSameBuilding
       .filter(x => x.isSelectedOrHovered())
       .forEach(x => {
         const coord = x.getCoordinates();

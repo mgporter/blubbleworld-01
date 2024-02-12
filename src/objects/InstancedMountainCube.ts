@@ -14,7 +14,7 @@ class InstancedMountainCube extends InstancedGridCube {
       selectable: false,
     }
 
-    super(length || 1, width || 1, depth || 1.2, count, options);
+    super(length || 1, width || 1, depth || 1, count, options);
 
     this.name = "InstancedMountainCube";
     this.displayName = "Mountains";

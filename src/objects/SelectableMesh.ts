@@ -29,6 +29,10 @@ class SelectableMesh extends Mesh {
     return this;
   }
 
+  getIndex() {
+    return 0;
+  }
+
   getCoordinates() {
     return this.#coordinates;
   }

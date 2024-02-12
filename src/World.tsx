@@ -8,10 +8,9 @@ export function World({canvasInterface}: {canvasInterface: CanvasInterface}) {
   const {camera, scene, gl, raycaster} = useThree();
 
   useEffect(() => {
-    console.log("Interface update");
+
     canvasInterface.setState(scene, camera, gl, raycaster);
     canvasInterface.enableFlyControls();
-    // canvasInterface.enableMouseHandler();
 
     /* These will occur as soon as the canvas loads up */
     canvasInterface.buildWorld(

@@ -1,4 +1,4 @@
-import { Camera, Mesh, Object3D, Raycaster, Scene, WebGLRenderer } from "three";
+import { Camera, Matrix4, Mesh, Object3D, Raycaster, Scene, Vector3, WebGLRenderer } from "three";
 import { Lights } from "../objects/Lights";
 import { Board } from "./Board";
 import { Animatable, FinishSelectionObject, Selectable, Selector } from "../types";
@@ -133,7 +133,7 @@ export default class CanvasInterface {
     this.#mouseEvents!.setObjects(this.#selectables);
   }
 
-  placeBuilding(building: Buildable, data: FinishSelectionObject) {
+  placeBuilding(building: Buildable, objects: Selectable[], target: Selectable) {
 
     /**
      * Current issues:
@@ -143,56 +143,38 @@ export default class CanvasInterface {
      * a stackable building with connectors.
      */
 
-    if (data.objects == null) return;
-
     if (MouseEventHandler.isTwoPhaseSelector(building.selector)) {
-      data.objects.forEach(x => {
+      objects.forEach(x => {
         const model = this.#modelInterface.getModel(building.keyName);
         x.addBuildable(model, building);
       });
     } 
 
     else if (MouseEventHandler.isConnectingSelector(building.selector)) {
-      if (data.target == null) return;
       const model = this.#modelInterface.getModel(building.keyName);
-      data.target.addBuildable(model, building);
+      target.addBuildable(model, building);
 
-      this.#addConnectorToBoard(building, model, data.target, data.objects);
+      this.#addConnectorToBoard(building, model, target, objects);
     }
     
     else {
       // Single Phase selector: currently only for Skyscraper
-      if (data.target == null) return;
       const model = this.#modelInterface.getModel(building.keyName);
 
       // get Height info
-      const level = data.target.getBuildables().length;
+      const level = target.getBuildables().length;
       model.position.z += level * building.mesh.heightIncrementor;
 
-      data.objects.forEach(x => {
-        if (x === data.target) x.addBuildable(model, building);
+      objects.forEach(x => {
+        if (x === target) x.addBuildable(model, building);
         else x.addBuildable(model, building, false);
       });
 
     }
 
-    this.#mouseEvents?.updateObjects(data.objects);
+    this.#mouseEvents?.updateObjects(objects);
 
   }
-
-  // #addBuildableToBoard(mesh: Selectable, building: Buildable) {
-
-  //   const level = mesh.getBuildables().length;
-
-  //   return this.#addModelToObject(
-  //     building.keyName,
-  //     this.#scene,
-  //     0,
-  //     level * building.mesh.heightIncrementor,
-  //     0,
-  //   );
-
-  // }
 
   #addConnectorToBoard(building: Buildable, model: Object3D, target: Selectable, objects: Selectable[]) {
     const adjCells = ConnectingSelector.getConnectingObjects(target, objects);
@@ -215,21 +197,48 @@ export default class CanvasInterface {
     }
   }
 
-  // #addModelToObject(meshName: string, parent: Scene | Object3D, x: number, y: number, z: number) {
+  bulldozeMountain(selectables: Selectable[]) {
+    selectables.forEach(mountain => {
+      const index = mountain.getIndex();
+      const instancedMesh = mountain.getMesh() as SelectableInstancedMesh;
 
-  //   const model = this.#modelInterface.getModel(meshName);
-  //   model.position.x += x;
-  //   model.position.y += y;
-  //   model.position.z += z;
+      const matrix = new Matrix4();
 
-  //   parent.add(model);
+      instancedMesh.getMatrixAt(index, matrix);
+      console.log(matrix);
+      const array = matrix.toArray();
+      matrix.fromArray([
+        array[0], array[1], array[2], array[3],
+        array[4], array[5], array[6], array[7],
+        array[8], array[9], 1, array[11],
+        array[12], array[13], array[14], array[15],
+      ]);
+      
+      instancedMesh.setMatrixAt(index, matrix);
+      instancedMesh.instanceMatrix.needsUpdate = true;
 
-  //   return model;
+      mountain.canPlaceBuildable = true;
+    })
 
-  // }
+    this.#mouseEvents?.updateObjects(selectables);
+  }
 
-  removeBuilding(mesh: Mesh) {
-    this.#scene.remove(mesh);
+  demolishBuildings(selectables: Selectable[]) {
+    selectables.forEach(x => {
+      const model = x.getBuildables()[0];
+      this.#removeBuilding(model, x);
+    })
+
+    this.#mouseEvents?.updateObjects(selectables);
+  }
+
+  #removeBuilding(mesh: Object3D, selectable?: Selectable) {
+    if ((mesh.userData as BuildableUserData).connectors) {
+      (mesh.userData as BuildableUserData).connectors
+        .forEach(x => x.parent?.remove(x));
+    }
+    mesh.parent?.remove(mesh);
+    if (selectable) selectable.getBuildables().shift();
   }
 
   clearWorld() {
