@@ -1,9 +1,10 @@
-import { BufferGeometry, Color, Material, Mesh, Vector3 } from "three";
+import { BufferGeometry, Color, Material, Mesh, Object3D, Vector3 } from "three";
 import { Buildable } from "../Buildables";
 
 class SelectableMesh extends Mesh {
 
   #isSelectable = true;
+  #isHoverable = true;
   #isSelected = false;
   #isHovered = false;
   #coordinates;
@@ -14,11 +15,13 @@ class SelectableMesh extends Mesh {
   hoverColor = new Color(0x444444);
   rejectedColor = new Color(0xff0000);
 
-  #buildables: {id: number, buildable: Buildable}[] = [];
+  #buildables: Object3D[] = [];
+  canPlaceBuildable;
 
   constructor(geometry: BufferGeometry, material: Material, coordinates?: Vector3, selectable?: boolean) {
     super(geometry, material);
-    this.#isSelectable = selectable == null ? true : selectable;
+    // this.#isSelectable = selectable == undefined ? true : selectable;
+    this.canPlaceBuildable = this.#isSelectable
     this.#coordinates = coordinates ? coordinates : new Vector3();
   }
 
@@ -35,9 +38,18 @@ class SelectableMesh extends Mesh {
   }
 
   setSelectable(val: boolean) {
-    if (!this.#isSelectable) return;
     this.#isSelectable = val;
-    if (!val) this.#isSelected = false;
+    if (!val) this.unselectAndUnhover();
+  }
+
+  isHoverable() {
+    return this.#isHoverable;
+  }
+
+  // CHANGE LATER
+  setHoverable(val: boolean) {
+    this.#isHoverable = val;
+    if (!val) this.unselectAndUnhover();
   }
 
   isSelected() {
@@ -108,8 +120,14 @@ class SelectableMesh extends Mesh {
     this.changeToDefaultAppearance();
   }
 
-  addBuildable(buildable: Buildable, id: number) {
-    this.#buildables.push({id: id, buildable: buildable});
+  addBuildable(mesh: Object3D, building: Buildable, addToObject = true) {
+    if (addToObject) {
+      mesh.position.x += this.getCoordinates().x;
+      mesh.position.y += this.getCoordinates().y;
+      mesh.position.z += this.getCoordinates().z;
+      this.add(mesh);
+    }
+    this.#buildables.push(mesh);
   }
 
   getBuildables() {

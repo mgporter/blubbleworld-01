@@ -11,6 +11,9 @@ class InstancedFoundationCube extends InstancedGridCube {
     }
 
     super(length || 1, width || 1, depth || 1, count, options, false);
+
+    this.name = "InstancedFoundationCube";
+    this.displayName = "Foundation";
   }
 
 }

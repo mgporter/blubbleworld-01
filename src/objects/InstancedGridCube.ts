@@ -87,6 +87,8 @@ class InstancedGridCube extends SelectableInstancedMesh {
 
     super(geometry, material, count, options.selectable, color, createSelectionObjects);
     this.instanceMatrix.setUsage(DynamicDrawUsage);
+    this.name = "InstancedGridCube";
+    this.displayName = "InstancedGridCube";
 
     this.#length = length;
     this.#width = width;

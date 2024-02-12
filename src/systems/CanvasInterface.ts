@@ -9,8 +9,8 @@ import { SelectableInstancedMesh } from "../objects/SelectableInstancedMesh";
 import { MyScene } from "../objects/MyScene";
 import { MyPerspectiveCamera } from "../objects/MyPerspectiveCamera";
 import { GLTFLoader } from "three/examples/jsm/Addons.js";
-import { Buildable, BuildableType, Buildables } from "../Buildables";
-import { ModelInterface } from "../objects/ModelInterface";
+import { Buildable, BuildableType, BuildableUserData, Buildables } from "../Buildables";
+import { ModelInterface } from "./ModelInterface";
 import CTr from "./CoordinateTranslator";
 
 export default class CanvasInterface {
@@ -62,7 +62,6 @@ export default class CanvasInterface {
 
   init() {
 
-    console.log("CanvasInterface init");
     /* This cannot be set in the constructor because when the object
     is constructed, we do not have a reference to the renderer */
     this.#flyControls = new MyFlyControls(this.#camera, this.#renderer);
@@ -136,57 +135,98 @@ export default class CanvasInterface {
 
   placeBuilding(building: Buildable, data: FinishSelectionObject) {
 
+    /**
+     * Current issues:
+     * 1. we check for the height of a stackable building by looking at the
+     * length of the array of the buildables array in the selectable. However,
+     * this array also contains connectors. This would be a problem if we wanted
+     * a stackable building with connectors.
+     */
+
     if (data.objects == null) return;
 
     if (MouseEventHandler.isTwoPhaseSelector(building.selector)) {
       data.objects.forEach(x => {
-        const model = this.#addBuildableToBoard(x, building);
-        x.addBuildable(building, model.id);
+        const model = this.#modelInterface.getModel(building.keyName);
+        x.addBuildable(model, building);
       });
     } 
 
     else if (MouseEventHandler.isConnectingSelector(building.selector)) {
       if (data.target == null) return;
-      const model = this.#addBuildableToBoard(data.target, building);
-      data.target.addBuildable(building, model.id);
+      const model = this.#modelInterface.getModel(building.keyName);
+      data.target.addBuildable(model, building);
 
-      const adjCells = ConnectingSelector.getConnectingObjects(data.target, data.objects);
-      
-      for (const adjCell of adjCells) {
-
-        const connectorModel = this.#modelInterface.getModel(`${building.keyName}_Connector`);
-        console.log(adjCell.offsetX, adjCell.offsetY);
-        connectorModel.position.x = -(adjCell.offsetX * 0.5);
-        connectorModel.position.y = 0;
-        connectorModel.position.z = (adjCell.offsetY * 0.5);
-        model.add(connectorModel);
-      }
-
+      this.#addConnectorToBoard(building, model, data.target, data.objects);
     }
     
     else {
+      // Single Phase selector: currently only for Skyscraper
       if (data.target == null) return;
-      const model = this.#addBuildableToBoard(data.target, building);
-      data.objects.forEach(x => x.addBuildable(building, model.id));
+      const model = this.#modelInterface.getModel(building.keyName);
+
+      // get Height info
+      const level = data.target.getBuildables().length;
+      model.position.z += level * building.mesh.heightIncrementor;
+
+      data.objects.forEach(x => {
+        if (x === data.target) x.addBuildable(model, building);
+        else x.addBuildable(model, building, false);
+      });
+
     }
 
-  }
-
-  #addBuildableToBoard(mesh: Selectable, building: Buildable) {
-    const coordinates = mesh.getCoordinates();
-
-    const level = mesh.getBuildables().length;
-
-    const model = this.#modelInterface.getModel(building.keyName);
-    model.position.x += CTr.boardToMouse(coordinates.y);
-    model.position.y += (level * building.mesh.heightIncrementor);
-    model.position.z += CTr.boardToMouse(coordinates.x);
-
-    this.#scene.add(model);
-
-    return model;
+    this.#mouseEvents?.updateObjects(data.objects);
 
   }
+
+  // #addBuildableToBoard(mesh: Selectable, building: Buildable) {
+
+  //   const level = mesh.getBuildables().length;
+
+  //   return this.#addModelToObject(
+  //     building.keyName,
+  //     this.#scene,
+  //     0,
+  //     level * building.mesh.heightIncrementor,
+  //     0,
+  //   );
+
+  // }
+
+  #addConnectorToBoard(building: Buildable, model: Object3D, target: Selectable, objects: Selectable[]) {
+    const adjCells = ConnectingSelector.getConnectingObjects(target, objects);
+      
+    for (const adjCell of adjCells) {
+
+      const connectorModel = this.#modelInterface.getModel(`${building.keyName}_Connector`);
+      connectorModel.position.x += -(adjCell.offsetX * 0.5);
+      connectorModel.position.y += 0;
+      connectorModel.position.z += adjCell.offsetY * 0.5;
+
+      model.add(connectorModel);
+
+      const targetUserData = (model.userData as BuildableUserData);
+      const adjCellUserData = (adjCell.cell.getBuildables()[0].userData as BuildableUserData);
+
+      targetUserData.connectors.push(connectorModel);
+      adjCellUserData.connectors.push(connectorModel);
+      
+    }
+  }
+
+  // #addModelToObject(meshName: string, parent: Scene | Object3D, x: number, y: number, z: number) {
+
+  //   const model = this.#modelInterface.getModel(meshName);
+  //   model.position.x += x;
+  //   model.position.y += y;
+  //   model.position.z += z;
+
+  //   parent.add(model);
+
+  //   return model;
+
+  // }
 
   removeBuilding(mesh: Mesh) {
     this.#scene.remove(mesh);

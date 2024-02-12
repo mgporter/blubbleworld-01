@@ -17,21 +17,21 @@ interface GameUiContainerProps {
 
 export default function GameUiContainer({canvasInterface}: GameUiContainerProps) {
 
-  const [selectedBuilding, setSelectedBuilding] = useState<BuildableType>("");
+  const [selectedBuilding, setSelectedBuilding] = useState<BuildableType>("tent");
   const [questionDialogData, setQuestionDialogData] = useState<FinishSelectionObject>(({} as FinishSelectionObject));
   const [showQuestionDialog, setShowQuestionDialog] = useState(false);
   const [buildMenuEnabled, setBuildMenuEnabled] = useState(true);
   const [showToolTips, setShowToolTips] = useState(true);
-  const [mouseCoordinates, setMouseCoordinates] = useState(new Vector2());
+  // const [mouseCoordinates, setMouseCoordinates] = useState(new Vector2());
 
-  const onBuildingSelect = useCallback((buildingType: string) => {
+  const onBuildingSelect = useCallback((buildingType: BuildableType) => {
     setSelectedBuilding(buildingType);
     const selector = Buildables[buildingType].selector;
     canvasInterface.setSelector(selector);
   }, [canvasInterface]);
 
   const onBuildingPlace = useCallback((result: FinishSelectionObject) => {
-    setMouseCoordinates(new Vector2(result.target?.getCoordinates().x, result.target?.getCoordinates().y));
+    // setMouseCoordinates(new Vector2(result.target?.getCoordinates().x, result.target?.getCoordinates().y));
     setQuestionDialogData(result);
     setShowQuestionDialog(true);
     setBuildMenuEnabled(false);

@@ -127,15 +127,9 @@ export class MouseEventHandler {
     return objects;
   }
 
-  updateObjects(selectablesToUpdate: Selectable[]) {
-    this.#selector.updateObjects(selectablesToUpdate);
-  }
-
   #onClick() {
 
-    if (this._currentTarget) {   // If the mouse is over a clickable target
-
-      if (!this.#selector.isSelectionValid) return; 
+    if (this._currentTarget && this.#selector.isSelectionValid) {   // If the mouse is over a clickable target
 
       if (inSelectionMode) {
 
@@ -238,7 +232,7 @@ export class MouseEventHandler {
 
     } else {
 
-      if (mouseoverTarget.isHoverable()) {
+      if (mouseoverTarget.isSelectable()) {
 
         if (this._currentTarget) this.#selector.handleMouseLeaveTarget(this._currentTarget);
         this._currentTarget = mouseoverTarget;
@@ -274,78 +268,46 @@ export class MouseEventHandler {
 export class BaseSelector {
 
   protected meshesToSelect;
-  protected meshesToHover;
   isSelectionValid = true;
 
-  constructor(meshesToSelect?: SelectableProperties, meshesToHover?: SelectableProperties) {
+  constructor(meshesToSelect?: SelectableProperties) {
     this.meshesToSelect = meshesToSelect == undefined ? {canPlaceBuildable: true} : meshesToSelect;
-    this.meshesToHover = meshesToHover == undefined ? this.meshesToSelect : meshesToHover;
   }
 
 
-  init(selectablesToUpdate?: Selectable[]) {
+  init() {
 
-    const array = selectablesToUpdate ? selectablesToUpdate : selectables;
-
-    forEachFilter<Selectable>(
-      array, 
-      this.#filterSelectables(this.meshesToSelect), 
-      x => {x.setSelectable(true); x.setHoverable(true)},
-      x => {x.setSelectable(false); x.setHoverable(false)});
-
-    // If a separate "meshesToHover" object was not given, then we just stop here.
-    // In this case, every object is either both selectable and hoverable, or neither.
-    if (this.meshesToHover === this.meshesToSelect) return;
-
-
-    // If a separate "meshesToHover" object WAS given, then we set hoverability based
-    // on those properties. However, objects that are selectable are ALWAYS hoverable,
-    // so those are skipped.
-    const filterHoverable = (selectable: Selectable) => {
-      if (selectable.isSelectable()) return true;
-      return this.#filterSelectables(this.meshesToHover)(selectable);
-    }
-
-    forEachFilter<Selectable>(
-      array, 
-      filterHoverable, 
-      x => x.setHoverable(true),
-      x => x.setHoverable(false));
-
-  }
-
-  #filterSelectables(props: SelectableProperties) {
-
-    return (selectable: Selectable) => {
+    const filter = (selectable: Selectable) => {
+      
       // Check meshes by name
-      if (props.name != undefined) {
+      if (this.meshesToSelect.name) {
 
-        if (typeof props.name === 'object') {
-          if (!props.name.includes(selectable.getMesh().name as MeshName)) return false;
+        if (typeof this.meshesToSelect.name === 'object') {
+          if (!this.meshesToSelect.name.includes(selectable.getMesh().name as MeshName)) return false;
         } 
-        else if (props.name != selectable.getMesh().name) return false;
+        else if (this.meshesToSelect.name != selectable.getMesh().name) return false;
 
       }
 
       // Check if this selectable has a building on it
-      if (props.isOccupied != undefined) {
-        if (props.isOccupied != selectable.isOccupied()) return false;
+      if (this.meshesToSelect.isOccupied != undefined) {
+        if (this.meshesToSelect.isOccupied != selectable.isOccupied()) return false;
       }
 
       // Check if this selectable can hold a building
-      if (props.canPlaceBuildable != undefined) {
-        if (props.canPlaceBuildable != selectable.canPlaceBuildable) return false;
+      if (this.meshesToSelect.canPlaceBuildable != undefined) {
+        if (this.meshesToSelect.canPlaceBuildable != selectable.canPlaceBuildable) return false;
       }
 
       return true;
     }
-
+    
+    forEachFilter<Selectable>(
+      selectables, 
+      filter, 
+      x => x.setSelectable(true),
+      x => x.setSelectable(false));
   }
-
-  updateObjects(selectablesToUpdate: Selectable[]) {
-    this.init(selectablesToUpdate);
-  }
-
 }
 
 
@@ -395,10 +357,9 @@ export class EmptySelector extends BaseSelector implements SinglePhaseSelector {
 interface FlexibleRectangleSelectorProps {
   buildableMaxHeight?: number,
   allowIncompleteRectangles?: boolean,
-  length?: number, 
-  width?: number,
+  maxLength?: number, 
+  maxWidth?: number,
   meshesToSelect?: SelectableProperties,
-  meshesToHover?: SelectableProperties,
 }
 
 /** FlexibleRectangleSelector allows the user to select all
@@ -419,23 +380,17 @@ export class FlexibleRectangleSelector extends BaseSelector implements TwoPhaseS
   #validCount = 0;
 
   #insideRect: Selectable[] = [];
+  #outsideRect: Selectable[] = [];
   #allowIncompleteRectangles;
   #maxLength;
   #maxWidth;
   #buildableMaxHeight;
   
-  constructor({
-    buildableMaxHeight, 
-    allowIncompleteRectangles, 
-    length, 
-    width, 
-    meshesToSelect, 
-    meshesToHover
-  }: FlexibleRectangleSelectorProps) {
-    super(meshesToSelect, meshesToHover);
+  constructor({buildableMaxHeight, allowIncompleteRectangles, maxLength, maxWidth, meshesToSelect}: FlexibleRectangleSelectorProps) {
+    super(meshesToSelect);
     this.#buildableMaxHeight = (buildableMaxHeight && buildableMaxHeight > 1) ? buildableMaxHeight : 1;
-    this.#maxLength = (length && length > 1) ? length : -1;
-    this.#maxWidth = (width && width > 1) ? width : -1;
+    this.#maxLength = (maxLength && maxLength > 1) ? maxLength : -1;
+    this.#maxWidth = (maxWidth && maxWidth > 1) ? maxWidth : -1;
     this.#allowIncompleteRectangles = allowIncompleteRectangles == undefined ? true : allowIncompleteRectangles;
   }
 
@@ -452,20 +407,17 @@ export class FlexibleRectangleSelector extends BaseSelector implements TwoPhaseS
   allowStacking() {return this.#buildableMaxHeight > 1;}
 
   handleMouseOverSelectableTarget(target: Selectable) {
-
-    if (target.isSelectable()) {
+    if (!target.isOccupied() || this.allowStacking()) {
       target.hover(false);
       this.isSelectionValid = true;
-    } else if (target.isHoverable()) {
+    } else {
       target.hover(true);
       this.isSelectionValid = false;
     }
 
   }
 
-  handleMouseOverAnyTarget(target: Selectable) {
-
-  }
+  handleMouseOverAnyTarget(target: Selectable) {}
 
   handleMouseLeaveTarget(target: Selectable) {
     target.unhover();
@@ -476,13 +428,18 @@ export class FlexibleRectangleSelector extends BaseSelector implements TwoPhaseS
   }
 
   handleFirstClick(target: Selectable) {
-    target.select();
+    target.select()
   }
 
   handleSelectionFinished(target: Selectable): FinishSelectionObject {
+    const selection: Selectable[] = [];
+
+    selectables
+      .filter(x => x.isSelectedOrHovered())
+      .forEach(x => selection.push(x));
 
     return {
-      objects: [...this.#insideRect],
+      objects: selection,
       target: target,
       data: {
         minX: this.#minX,
@@ -501,27 +458,25 @@ export class FlexibleRectangleSelector extends BaseSelector implements TwoPhaseS
   handleSelectionMode(origin: Selectable, target: Selectable) {
 
     this.#setMinMaxCoordinates(origin, target);
-    this.#generateInsideRect();
+    this.#findObjectsThatAreInsideAndOutsideRect();
 
     this.#lengthX = Math.abs((this.#maxX - this.#minX)) + 1;
     this.#lengthY = Math.abs((this.#maxY - this.#minY)) + 1;
     this.#totalCount = this.#lengthX * this.#lengthY;
 
-    const selectionSizeIsValid = 
-      (this.#maxLength <= -1 ? true : this.#lengthX <= this.#maxLength) &&
-      (this.#maxWidth <= -1 ? true : this.#lengthY <= this.#maxWidth);
-    
-    const selectionIsRectangular = 
-      this.#allowIncompleteRectangles ? true :
-      this.#insideRect.length === this.#totalCount;
+    const selectionTooBig = 
+      (this.#maxLength != -1 ? this.#lengthX > this.#maxLength : false) ||
+      (this.#maxWidth != -1 ? this.#lengthY > this.#maxWidth : false)
 
+    const selectionContainsUnselectables = 
+      this.#allowIncompleteRectangles ? false :
+      this.#insideRect.length < this.#totalCount;
 
-    this.isSelectionValid = 
-      selectionSizeIsValid && 
-      selectionIsRectangular;
-
-
-    this.#addRectSelectionEffect();
+    if (selectionContainsUnselectables || selectionTooBig) {
+      this.#addRectSelectionEffect(false);
+    } else {
+      this.#addRectSelectionEffect(true);
+    }
 
   }
 
@@ -544,21 +499,32 @@ export class FlexibleRectangleSelector extends BaseSelector implements TwoPhaseS
     }
   }
 
-  #generateInsideRect() {
-
-    this.#insideRect.forEach(x => x.unhover());
-
-    this.#insideRect = [];
+  #findObjectsThatAreInsideAndOutsideRect() {
+    const insideRect: Selectable[] = [];
+    const outsideRect: Selectable[] = [];
 
     selectables
-      .filter(x => this.#inBounds(x) && x.isSelectable())
-      .forEach(x => this.#insideRect.push(x));
+      .filter(x => x.isSelectable() && x.getBuildables().length < this.#buildableMaxHeight)
+      .forEach(x => {
+        if (this.#inBounds(x)) {
+          insideRect.push(x);
+        }
+        else outsideRect.push(x);
+        
+      });
 
+    this.#insideRect = insideRect;
+    this.#outsideRect = outsideRect;
+    this.#validCount = insideRect.length;
   }
 
-  #addRectSelectionEffect() {
-    this.#insideRect
-      .forEach(x => x.hover(!this.isSelectionValid));
+  #addRectSelectionEffect(isValid: boolean) {
+    // Reset the colors of everything only if there is a change in validity
+    if (isValid != this.isSelectionValid) this.#insideRect.forEach(x => x.unhover());
+    this.isSelectionValid = isValid;
+    
+    this.#insideRect.forEach(x => x.hover(!isValid));
+    this.#outsideRect.forEach(x => x.unhover());
   }
 
   #inBounds(obj: Selectable) {
@@ -582,7 +548,6 @@ interface FixedRectangleSelectorProps {
   length?: number, 
   width?: number,
   meshesToSelect?: SelectableProperties,
-  meshesToHover?: SelectableProperties,
 }
 
 
@@ -598,7 +563,8 @@ export class FixedRectangleSelector extends BaseSelector implements SinglePhaseS
   #maxX = Number.MIN_SAFE_INTEGER; 
   #minY = Number.MAX_SAFE_INTEGER;
   #maxY = Number.MIN_SAFE_INTEGER;
-  protected insideRect: Selectable[] = [];
+  #insideRect: Selectable[] = [];
+  #outsideRect: Selectable[] = [];
 
   #lengthX;
   #lengthY;
@@ -606,8 +572,8 @@ export class FixedRectangleSelector extends BaseSelector implements SinglePhaseS
   #buildableMaxHeight;
   #currentHeight;
   
-  constructor({buildableMaxHeight, length, width, meshesToSelect, meshesToHover}: FixedRectangleSelectorProps) {
-    super(meshesToSelect, meshesToHover);
+  constructor({buildableMaxHeight, length, width, meshesToSelect}: FixedRectangleSelectorProps) {
+    super(meshesToSelect);
     this.#lengthX = (length && length > 1) ? length : 1;
     this.#lengthY = (width && width > 1) ? width : 1;
     this.#totalCount = this.#lengthX * this.#lengthY;
@@ -629,35 +595,36 @@ export class FixedRectangleSelector extends BaseSelector implements SinglePhaseS
   handleMouseOverAnyTarget(target: Selectable) {
 
     this.#setMinMaxCoordinates(target);
-    this.#generateInsideRect();
+    this.#findObjectsThatAreInsideAndOutsideRect();
 
-    /* If all objs are selectable, then valid selection and add valid hover
-    If all objs are hoverable but have an unselectable, then valid selection and add invalid hover
-    if any objs are unhoverable, they don't get any hover changes */
+    const selectionContainsUnselectables = this.#insideRect.length < this.#totalCount;
 
-    this.isSelectionValid = 
-      this.insideRect.filter(x => x.isSelectable()).length === this.#totalCount;
+    const occupiedCells = this.#insideRect.filter(x => x.isOccupied());
+    let selectionInvalidBecauseOccupied;
 
+    selectionInvalidBecauseOccupied = occupiedCells.length > 0;
 
-    // If we allow occupied calls AND
-    // all the cells are occupied AND
-    // the building on the cells is not yet at maxHeight, then
+    this.#currentHeight = occupiedCells.length > 0 ? occupiedCells[0].getBuildables().length + 1 : 1;
+
+    // If we allow stacking (maxHeight > 1) AND
+    // all the cells are occupied with a building AND
+    // the building on the cell is not yet at maxHeight, then
     // we can allow a stack, but only if the cells are 
     // occupied by the same building.
-    if (this.meshesToSelect.isOccupied != false) {
+    if (this.#buildableMaxHeight > 1 && 
+      occupiedCells.length === this.#totalCount &&
+      occupiedCells[0].getBuildables().length < this.#buildableMaxHeight) {
 
-      const occupiedCells = this.insideRect.filter(x => x.isOccupied());
-
-      if (occupiedCells.length > 0) {
-        this.isSelectionValid = 
-          occupiedCells.length === this.#totalCount &&
-          occupiedCells[0].getBuildables().length < this.#buildableMaxHeight &&
-          occupiedCells.filter(x => x.getBuildables()[0].id === occupiedCells[0].getBuildables()[0].id).length === this.#totalCount;
-      }
-
+      const buildingId = occupiedCells[0].getBuildables()[0].id;
+      selectionInvalidBecauseOccupied = 
+        occupiedCells.filter(x => x.getBuildables()[0].id === buildingId).length != this.#totalCount;
     }
 
-    this.#addRectSelectionEffect();
+    if (selectionContainsUnselectables || selectionInvalidBecauseOccupied) {
+      this.#addRectSelectionEffect(false);
+    } else {
+      this.#addRectSelectionEffect(true);
+    }
 
   }
 
@@ -708,23 +675,28 @@ export class FixedRectangleSelector extends BaseSelector implements SinglePhaseS
 
   }
 
-  #generateInsideRect() {
-    
-    // Unhover old objects
-    this.insideRect.forEach(x => x.unhover());
+  #findObjectsThatAreInsideAndOutsideRect() {
+    const insideRect: Selectable[] = [];
+    const outsideRect: Selectable[] = [];
 
-    // Reset the insideRect
-    this.insideRect = [];
-
-    // Push new objects into the insideRect
     selectables
-      .filter(x => this.#inBounds(x) && x.isHoverable())
-      .forEach(x => this.insideRect.push(x));
+      .filter(x => x.isSelectable())
+      .forEach(x => {
+        if (this.#inBounds(x)) insideRect.push(x);
+        else outsideRect.push(x);
+      });
 
+    this.#insideRect = insideRect;
+    this.#outsideRect = outsideRect;
   }
 
-  #addRectSelectionEffect() {
-    this.insideRect.forEach(x => x.hover(!this.isSelectionValid));
+  #addRectSelectionEffect(isValid: boolean) {
+    // Reset the colors of everything if there is a change in validity
+    if (isValid != this.isSelectionValid) this.#insideRect.forEach(x => x.unhover());
+    this.isSelectionValid = isValid;
+    
+    this.#insideRect.forEach(x => x.hover(!isValid));
+    this.#outsideRect.forEach(x => x.unhover());
   }
 
   #inBounds(obj: Selectable) {
@@ -746,7 +718,6 @@ interface ConnectingSelectorProps {
   buildingType: BuildableType;
   maxDepth: number;
   meshesToSelect?: SelectableProperties,
-  meshesToHover?: SelectableProperties,
 }
 
 /* Connecting selector allows a building to connect onto
@@ -758,8 +729,8 @@ export class ConnectingSelector extends FixedRectangleSelector {
   #selectablesWithSameBuilding: Selectable[];
   isConnectingSelector = true;
 
-  constructor({buildableMaxHeight, buildingType, maxDepth, meshesToSelect, meshesToHover}: ConnectingSelectorProps) {
-    super({buildableMaxHeight, length: 1, width: 1, meshesToSelect, meshesToHover});
+  constructor({buildableMaxHeight, buildingType, maxDepth, meshesToSelect}: ConnectingSelectorProps) {
+    super({buildableMaxHeight, length: 1, width: 1, meshesToSelect});
     this.#buildingType = buildingType;
     this.#selectablesWithSameBuilding = [];
     this.#maxDepth = maxDepth;
@@ -805,25 +776,12 @@ export class ConnectingSelector extends FixedRectangleSelector {
     };
   }
 
-  init(objectsToUpdate?: Selectable[]) {
-    super.init(objectsToUpdate);
-
-    // Update the array of cells that have the same building
-    this.#selectablesWithSameBuilding = 
-      selectables.filter(x => x.isOccupied() && x.getBuildables()[0].name === this.#buildingType);
-  }
-
   // Override
   handleMouseOverAnyTarget(target: Selectable) {
-
-    // Clear hovering from previous cells
-    this.#selectablesWithSameBuilding.forEach(x => x.unhover());
-
     super.handleMouseOverAnyTarget(target);
-
     if (this.isSelectionValid === false) return;
 
-    const sameBuildingCopy = [...this.#selectablesWithSameBuilding];
+    this.#refreshCellsWithSameBuilding();
 
     let curDepth = 0;
     const queue: Selectable[] = [target];
@@ -834,12 +792,12 @@ export class ConnectingSelector extends FixedRectangleSelector {
 
       while (levelSize-- > 0) {
         const currentCell = queue.shift();
-        const adjCells = sameBuildingCopy.filter(x => this.#isAdjacentTo(currentCell!, x));
+        const adjCells = this.#selectablesWithSameBuilding.filter(x => this.#isAdjacentTo(currentCell!, x));
   
         for (const cell of adjCells) {
           cell.hover();
           queue.push(cell);
-          sameBuildingCopy.splice(sameBuildingCopy.indexOf(cell), 1);
+          this.#selectablesWithSameBuilding.splice(this.#selectablesWithSameBuilding.indexOf(cell), 1);
         }
 
       }
@@ -855,6 +813,13 @@ export class ConnectingSelector extends FixedRectangleSelector {
     const targetC = target.getCoordinates();
     return (testC.y === targetC.y && testC.x <= targetC.x + 1 && testC.x >= targetC.x - 1) ||
       (testC.x === targetC.x && testC.y <= targetC.y + 1 && testC.y >= targetC.y - 1);
+  }
+
+  #refreshCellsWithSameBuilding() {
+    this.#selectablesWithSameBuilding = [];
+
+    this.#selectablesWithSameBuilding = 
+      selectables.filter(x => x.isOccupied() && x.getBuildables()[0].name === this.#buildingType);
   }
 
   static getConnectingObjects(target: Selectable, objects: Selectable[]) {

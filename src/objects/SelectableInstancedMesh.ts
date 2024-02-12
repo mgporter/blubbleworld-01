@@ -6,6 +6,7 @@ import {
   Vector3} from "three";
   
 import { InstancedMeshSelectionObject } from "./InstancedMeshSelectionObject";
+import { MeshName } from "../types";
 
 class SelectableInstancedMesh extends InstancedMesh {
 
@@ -15,7 +16,8 @@ class SelectableInstancedMesh extends InstancedMesh {
   hoverColor = new Color(0x444444);
   rejectedColor = new Color(0xff0000);
 
-  displayName = "SelectableInstanceMesh";
+  displayName = "SelectableInstancedMesh";
+  name: MeshName = "SelectableInstancedMesh";
 
   constructor(
     geometry: BufferGeometry,
@@ -78,16 +80,20 @@ class SelectableInstancedMesh extends InstancedMesh {
     return this.#selectionObjects[index].setCoordinates(coordinates);
   }
 
-  unselectAll() {
+  unselect() {
     this.#selectionObjects.forEach(x => x.unselect());
   }
 
-  unhoverAll() {
+  unhover() {
     this.#selectionObjects.forEach(x => x.unhover());
   }
 
-  unselectAndUnhoverAll() {
+  unselectAndUnhover() {
     this.#selectionObjects.forEach(x => x.unselectAndUnhover());
+  }
+
+  setSelectable(val: boolean) {
+    this.#selectionObjects.forEach(x => x.setSelectable(val));
   }
 
   // Hooks to implement later

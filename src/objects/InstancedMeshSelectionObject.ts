@@ -1,16 +1,20 @@
-import { Matrix4, Vector3 } from "three";
+import { Matrix4, Object3D, Vector3 } from "three";
 import { SelectableInstancedMesh } from "./SelectableInstancedMesh";
 import { Buildable } from "../Buildables";
 
 class InstancedMeshSelectionObject {
 
   #isSelectable = true;
+  #isHoverable = true;
+
   #isSelected = false;
   #isHovered = false;
   #index;
   #coordinates = new Vector3();
   #instancedMeshRef: SelectableInstancedMesh;
-  #buildables: {id: number, buildable: Buildable}[] = [];
+  #buildables: Object3D[] = [];
+  canPlaceBuildable;
+
 
   constructor(
     isSelectable: boolean, 
@@ -21,7 +25,7 @@ class InstancedMeshSelectionObject {
     changeToHoverAppearance: (idx: number) => void,
     changeToRejectedAppearance: (idx: number) => void) {
 
-    this.#isSelectable = isSelectable;
+    this.canPlaceBuildable = isSelectable;
     this.#index = index;
     this.#instancedMeshRef = instancedMeshRef;
     this.changeToSelectedAppearance = changeToSelectedAppearance;
@@ -47,18 +51,23 @@ class InstancedMeshSelectionObject {
     }
   }
 
-  updateCoordinates() {
-    
-  }
-
   isSelectable() {
     return this.#isSelectable;
   }
 
   setSelectable(val: boolean) {
-    if (!this.#isSelectable) return;
     this.#isSelectable = val;
-    if (!val) this.#isSelected = false;
+    if (!val) this.unselectAndUnhover();
+  }
+
+  isHoverable() {
+    return this.#isHoverable;
+  }
+
+  // CHANGE LATER
+  setHoverable(val: boolean) {
+    this.#isHoverable = val;
+    if (!val) this.unselectAndUnhover();
   }
 
   isSelected() {
@@ -102,7 +111,7 @@ class InstancedMeshSelectionObject {
   }
 
   hover(rejected?: boolean) {
-    if (!this.#isSelectable || this.#isHovered) return;
+    if (!this.#isHoverable || this.#isHovered) return;
     this.#isHovered = true;
     if (rejected) this.changeToRejectedAppearance(this.#index);
     else this.changeToHoverAppearance(this.#index);
@@ -128,8 +137,18 @@ class InstancedMeshSelectionObject {
     this.changeToDefaultAppearance(this.#index);
   }
 
-  addBuildable(buildable: Buildable, id: number) {
-    this.#buildables.push({id: id, buildable: buildable});
+  // addBuildable(buildable: Buildable, id: number) {
+  //   this.#buildables.push({id: id, buildable: buildable});
+  // }
+
+  addBuildable(mesh: Object3D, building: Buildable, addToObject = true) {
+    if (addToObject) {
+      mesh.position.x += this.getCoordinates().x;
+      mesh.position.y += this.getCoordinates().y;
+      mesh.position.z += this.getCoordinates().z;
+      this.#instancedMeshRef.add(mesh);
+    }
+    this.#buildables.push(mesh);
   }
 
   getBuildables() {

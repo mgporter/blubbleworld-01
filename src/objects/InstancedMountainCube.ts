@@ -9,6 +9,7 @@ class InstancedMountainCube extends InstancedGridCube {
       color: new Color(0x758e99),
       selectedColor: new Color(0x8f8f8f).multiplyScalar(0.2),
       hoverColor: new Color(0x8f8f8f).multiplyScalar(0.5),
+      rejectedColor: new Color(0xcc6a00),
       transparency: 1,
       selectable: false,
     }

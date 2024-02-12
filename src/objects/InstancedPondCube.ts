@@ -9,6 +9,7 @@ class InstancedPondCube extends InstancedGridCube {
       color: new Color(0x00d3ff),
       selectedColor: new Color(0x00d3ff).multiplyScalar(0.2),
       hoverColor: new Color(0x00d3ff).multiplyScalar(0.5),
+      rejectedColor: new Color(0xcc6a00),
       transparency: 0.8,
       selectable: false,
     }

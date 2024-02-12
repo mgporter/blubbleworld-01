@@ -2,12 +2,16 @@ import { useEffect, useState } from "react";
 import { MouseEventEmitter } from "../systems/EventEmitter";
 import { Selectable } from "../types";
 import CTr from "../systems/CoordinateTranslator";
+import { BuildableUserData } from "../Buildables";
 
 const displayGridName = (selectable: Selectable) => {
   const displayName = selectable.getMesh().displayName;
   const coord = selectable.getCoordinates();
+
+  // userData is defined as type Record<string, any> by Three.js, so we need a cast here
   const buildingName = selectable.getBuildables().length > 0 ?
-    ` with ${selectable.getBuildables()[0].buildable.displayName.toLowerCase()}` : ""
+    ` with ${(selectable.getBuildables()[0].userData as BuildableUserData).displayName.toLowerCase()}` : "";
+
   return `${displayName}${buildingName} at (${CTr.boardToMouse(coord.x)}, ${CTr.boardToMouse(coord.y)})`;
 
 };

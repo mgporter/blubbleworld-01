@@ -2,11 +2,11 @@ import NavSelectionOption from "./NavSelectionOption"
 import buildBuildingIcon from '../images/Building-simple_house_256.png';
 
 import { useState } from "react";
-import { Buildables } from "../Buildables";
+import { BuildableType, Buildables } from "../Buildables";
 import { motion } from "framer-motion";
 
 interface BuildMenuProps {
-  onBuildingSelect: (buildingType: string) => void,
+  onBuildingSelect: (buildingType: BuildableType) => void,
   buildMenuEnabled: boolean,
 }
 
@@ -17,11 +17,16 @@ export default function BuildMenu({onBuildingSelect, buildMenuEnabled}: BuildMen
   let menuWidth, menuHeight, itemsOpacity, itemsDelay, itemsDuration, itemsPointerEvents;
 
   const buildings = [
+    Buildables.tent,
     Buildables.house,
     Buildables.hotel,
-    Buildables.tent,
     Buildables.skyscraper
-  ]
+  ];
+
+  const otherOptions = [
+    Buildables.demolish,
+    Buildables.bulldozer,
+  ];
 
   if (showMenu) {
     menuWidth = "17rem";
@@ -47,18 +52,25 @@ export default function BuildMenu({onBuildingSelect, buildMenuEnabled}: BuildMen
       layoutId="buildMenuOpenCloseAction"
       initial={false}>
 
-      <div className={"border-2 rounded-xl border-gray-700 border-solid size-18 p-2 self-start " +
-        "bg-slate-700 transition-colors duration-100 cursor-pointer " +
-        "grow-0 " + (buildMenuEnabled ? "hover:bg-slate-200 active:bg-white ": " ")}
-        onClick={() => {if (buildMenuEnabled) setShowMenu(!showMenu)}}>
-        <img src={buildBuildingIcon} className="size-14" />
+      <div className="">
+        <div className={"border-2 rounded-xl border-gray-700 border-solid size-18 p-2 self-start " +
+          "bg-slate-700 transition-colors duration-100 cursor-pointer flex items-center" +
+          "grow-0 " + (buildMenuEnabled ? "hover:bg-slate-600 active:bg-slate-400 ": " ")}
+          onClick={() => {if (buildMenuEnabled) setShowMenu(!showMenu)}}>
+            <img src={buildBuildingIcon} className="size-14 grow-0 shrink-0" />
+            <motion.div 
+              animate={{opacity: itemsOpacity, transition: {delay: itemsDelay, type: "tween", duration: itemsDuration}}}
+              initial={false}
+              className="font-extrabold text-yellow-500 self-center grow text-center text-xl tracking-wide">
+                Build Menu</motion.div>
+        </div>
+        {/* <h1 className={showMenu ? "" : "hidden " + 'text-2xl mb-2 text-center grow'}>Build Menu</h1> */}
       </div>
       
       <motion.div layoutId="buildMenuOpenCloseAction"
         animate={{opacity: itemsOpacity, transition: {delay: itemsDelay, type: "tween", duration: itemsDuration}}}
         initial={false}
-        className={itemsPointerEvents}>
-        <h1 className='text-2xl mb-2'>Select a building</h1>
+        className={itemsPointerEvents + " overflow-y-auto mt-2"}>
         <ul>
           {buildings.map((b) => (
             <li key={b.displayName}>
@@ -70,6 +82,19 @@ export default function BuildMenu({onBuildingSelect, buildMenuEnabled}: BuildMen
             </li>
           ))}
         </ul>
+        <hr className="border-t-2 border-white my-6" />
+        <ul>
+          {otherOptions.map((b) => (
+            <li key={b.displayName}>
+              <NavSelectionOption 
+              onClickHandler={() => {onBuildingSelect(b.keyName); setShowMenu(false);}} 
+              img={b.icon} 
+              mainText={b.displayName} 
+              subText={`${b.price === 0 ? "Varies" : "$"+b.price}`} />
+            </li>
+          ))}
+        </ul>
+
       </motion.div>
 
     </motion.div>

@@ -29,6 +29,14 @@ export type ColoredMaterial =
 
 export type Selectable = SelectableMesh | InstancedMeshSelectionObject;
 
+export type MeshName = 
+  "SelectableInstancedMesh" | 
+  "InstancedGridCube" |
+  "InstancedGrassCube" |
+  "InstancedPondCube" |
+  "InstancedMountainCube" |
+  "InstancedFoundationCube";
+
 type FinishSelectionData = {
   minX: number,
   maxX: number,
@@ -47,14 +55,15 @@ export type FinishSelectionObject = {
 }
 
 export interface Selector {
-  handleMouseOverValidTarget: (target: Selectable) => void;
+  updateObjects: (selectablesToUpdate: Selectable[]) => void;
+  handleMouseOverSelectableTarget: (target: Selectable) => void;
   handleMouseOverAnyTarget: (target: Selectable) => void;
   handleMouseLeaveTarget: (target: Selectable) => void;
   handleMouseLeaveBoard: (target: Selectable) => void;
   handleSelectionFinished: (target: Selectable) => FinishSelectionObject;
   setMaxRectangleSize: (length: number, width: number) => void;
   allowStacking: () => boolean;
-
+  init: () => void;
   isSelectionValid: boolean;
 }
 
