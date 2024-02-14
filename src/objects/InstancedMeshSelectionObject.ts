@@ -114,11 +114,11 @@ class InstancedMeshSelectionObject {
     }
   }
 
-  hover(rejected?: boolean) {
-    if (!this.#isHoverable || this.#isHovered) return;
+  hover(accepted = true) {
+    if (!this.#isHoverable) return;
     this.#isHovered = true;
-    if (rejected) this.changeToRejectedAppearance(this.#index);
-    else this.changeToHoverAppearance(this.#index);
+    if (accepted) this.changeToHoverAppearance(this.#index); 
+    else this.changeToRejectedAppearance(this.#index);
   }
 
   /** 

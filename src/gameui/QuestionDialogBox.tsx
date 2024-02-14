@@ -1,5 +1,5 @@
-import { ChangeEvent, useCallback, useState } from "react"
-import { FinishSelectionObject } from "../types";
+import { ChangeEvent, useCallback, useEffect, useRef, useState } from "react"
+import { FinishSelectionObject, Selectable } from "../types";
 import { BuildableType, BuildableUserData, Buildables } from "../Buildables";
 import { motion } from "framer-motion";
 import { C } from "../Constants";
@@ -14,6 +14,7 @@ interface QuestionDialogBoxProps {
 }
 
 const cellProperties = "bg-green-700 flex gap-[8%] items-center justify-center row-span-1 col-span-1 "
+const connectorProps = "absolute text-sm border-2 border-black bg-gray-500 p-0.5 z-20 w-8 text-center rounded-md "
 
 
 export default function QuestionDialogBox({
@@ -51,24 +52,30 @@ export default function QuestionDialogBox({
     col: questionDialogData.data.lengthX, 
     cellFlexDir: flow};
 
-  // Get the coordinates of selected cells. Columns mappings are reversed.
+  // Normalize the coordiantes of cells from their board coordinates to 
+  // coordinates on the CSS grid. Note that columns mappings are reversed.
   // If a building is stackable (maxHeight > 1), we need to treat it separately
-  let cells: {row: number, col: number}[];
+  let cells: {row: number, col: number, hasRight: boolean, hasBottom: boolean}[];
   if (building.maxHeight === 1) {
 
     cells = questionDialogData.objects.map((selectable) => {
       return {
         col: questionDialogData.data!.lengthX - (selectable.getCoordinates().x - questionDialogData.data!.minX),
         row: selectable.getCoordinates().y - questionDialogData.data!.minY + 1,
+        hasBottom: false,
+        hasRight: false,
       }
     });
     
   } else {
-
-    cells = Array.from({length: currentHeight}, (v, i) => {
+    
+    // This is currently only for the SkyScraper
+    cells = Array.from({length: currentHeight + 1}, (v, i) => {
       return {
         row: i + 1,
         col: 1,
+        hasBottom: false,
+        hasRight: false,
       }
     })
 
@@ -77,7 +84,7 @@ export default function QuestionDialogBox({
   // This is for the FixedRectangleSelector ONLY, and not its ConnectingSelector subclass.
   if (!MouseEventHandler.isTwoPhaseSelector(building.selector) &&
   (building.selector as ConnectingSelector).isConnectingSelector != true) {
-    gridSize.row = currentHeight;
+    gridSize.row = currentHeight + 1;
     gridSize.col = 1;
     gridSize.cellFlexDir = "flex-row ";
   }
@@ -91,9 +98,11 @@ export default function QuestionDialogBox({
 
       gridSize.row = 1;
       gridSize.col = 1;
-      cells = [{
+      cells = [{  // maybe let it be taken care of by skyscraper case
         row: 1,
         col: 1,
+        hasBottom: false,
+        hasRight: false,
       }];
 
       const buildingToDemo = questionDialogData.target.getBuildables()[0].userData as BuildableUserData;
@@ -124,6 +133,48 @@ export default function QuestionDialogBox({
       equation = `${money} - ${building.price} =`;
       correctAnswer = money - building.price;
       buttonText = "Flatten it!";
+      break;
+    }
+
+    case "hotel": {
+
+      let connectorQuantity = 0;
+      const hotelCount = questionDialogData.objects.length;
+      const hotelPlural = hotelCount > 1;
+
+      // for each cell, find if there is a cell to the right or to the bottom, and add connector
+      cells.forEach((cell, _, arr) => {
+
+        if (arr.some(other => cell.col === other.col - 1 && 
+            cell.row === other.row)){
+              cell.hasRight = true;
+              connectorQuantity++;
+          }
+        
+        if (arr.some(other => cell.row === other.row - 1 && 
+            cell.col === other.col)) {
+              cell.hasBottom = true;
+              connectorQuantity++;
+          }
+        
+      });
+
+      headlineText = hotelPlural ? 
+        `How many ${C.peopleNamePlural} can our group of ${building.plural} hold now?` :
+        `How many ${C.peopleNamePlural} can this ${building.displayName} hold?`;
+
+
+      cellInternals = 
+        <>
+          <img className={cellImgProps} src={building.icon} style={{scale: "0.8"}}></img>
+          <p className={cellTextProps}>{building.capacity}</p>
+        </>
+
+      equation = 
+        `(${hotelCount} ${hotelPlural ? building.plural : building.displayName} × ${building.capacity}) + ` + 
+        `(${connectorQuantity} connectors × 2) =`;
+      correctAnswer = quantity * building.capacity;
+      buttonText = "Build it!";
       break;
     }
 
@@ -185,8 +236,10 @@ export default function QuestionDialogBox({
         onClick={() => handleCloseQuestionDialog()}>×</div>
         <h1 className="text-xl text-white text-center whitespace-pre-line p-2">{headlineText}</h1>
 
+
+
         {/* This is the grid container */}
-        <div className={`grid border-2 border-gray-400 bg-black gap-[2px] w-3/4 h-3/4`}
+        <div className={`relative grid border-2 border-gray-400 bg-black gap-[2px] w-3/4 h-3/4 z-10`}
           style={{
             gridTemplateRows: `repeat(${gridSize.row}, minmax(0, 1fr))`, 
             gridTemplateColumns: `repeat(${gridSize.col}, minmax(0, 1fr))`,
@@ -195,7 +248,28 @@ export default function QuestionDialogBox({
                 <div key={i} className={cellProperties + gridSize.cellFlexDir}
                     style={{gridRowStart: cell.row, gridColumnStart: cell.col}}>{cellInternals}</div>
               ))}
+            
+          {/* This is the dummy grid container */}
+
+          <div className={`absolute inset-0 grid gap-[2px] z-20 `}
+            style={{
+              gridTemplateRows: `repeat(${gridSize.row}, minmax(0, 1fr))`, 
+              gridTemplateColumns: `repeat(${gridSize.col}, minmax(0, 1fr))`,
+            }}>
+                {cells.map((cell, i) => (
+                  <div key={i} className={"row-span-1 col-span-1 flex items-center justify-center "}
+                      style={{gridRowStart: cell.row, gridColumnStart: cell.col, position: "relative"}}>
+                    <>
+                      {cell.hasBottom && <div className={"bottom-[-1rem] " + connectorProps + cellTextProps}>2</div>}
+                      {cell.hasRight && <div className={"right-[-1rem] " + connectorProps + cellTextProps}>2</div>}
+                    </>
+                  </div>
+                ))}
+          </div>
+
         </div>
+
+
 
         <div className="flex gap-4 text-white text-xl">
             <p>{equation}</p>

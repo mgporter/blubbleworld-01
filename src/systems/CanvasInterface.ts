@@ -1,17 +1,15 @@
-import { Camera, Matrix4, Mesh, Object3D, Raycaster, Scene, Vector3, WebGLRenderer } from "three";
+import { Camera, Matrix4, Object3D, Raycaster, Scene, WebGLRenderer } from "three";
 import { Lights } from "../objects/Lights";
 import { Board } from "./Board";
-import { Animatable, FinishSelectionObject, Selectable, Selector } from "../types";
+import { Animatable, Selectable, Selector } from "../types";
 import { MyFlyControls } from "./MyFlyControls";
-import { ConnectingSelector, EmptySelector, MouseEventHandler } from "./MouseEventHandlers";
+import { BaseSelector, ConnectingSelector, MouseEventHandler } from "./MouseEventHandlers";
 import { SelectableMesh } from "../objects/SelectableMesh";
 import { SelectableInstancedMesh } from "../objects/SelectableInstancedMesh";
 import { MyScene } from "../objects/MyScene";
 import { MyPerspectiveCamera } from "../objects/MyPerspectiveCamera";
-import { GLTFLoader } from "three/examples/jsm/Addons.js";
-import { Buildable, BuildableType, BuildableUserData, Buildables } from "../Buildables";
+import { Buildable, BuildableUserData } from "../Buildables";
 import { ModelInterface } from "./ModelInterface";
-import CTr from "./CoordinateTranslator";
 
 export default class CanvasInterface {
 
@@ -107,14 +105,8 @@ export default class CanvasInterface {
 
   /** Pass in a selector, or "null" to disable */
   setSelector(selector: Selector | null) {
-    // if (!this.#mouseEvents) this.#mouseEvents = new MouseEventHandler(
-    //   this.#camera,
-    //   this.#raycaster,
-    //   this.#renderer,
-    //   this.#selectables,
-    //   );
     if (selector) this.#mouseEvents!.setSelector(selector);
-    else this.#mouseEvents!.setSelector(new EmptySelector());
+    else this.#mouseEvents!.setSelector(new BaseSelector());
   }
 
   getSelector() {
@@ -153,8 +145,9 @@ export default class CanvasInterface {
     else if (MouseEventHandler.isConnectingSelector(building.selector)) {
       const model = this.#modelInterface.getModel(building.keyName);
       target.addBuildable(model, building);
+      const adjCells = building.selector.getConnectingObjects(target, objects);
 
-      this.#addConnectorToBoard(building, model, target, objects);
+      this.#addConnectorToBoard(building, model, adjCells);
     }
     
     else {
@@ -176,8 +169,14 @@ export default class CanvasInterface {
 
   }
 
-  #addConnectorToBoard(building: Buildable, model: Object3D, target: Selectable, objects: Selectable[]) {
-    const adjCells = ConnectingSelector.getConnectingObjects(target, objects);
+  #addConnectorToBoard(
+    building: Buildable, 
+    model: Object3D, 
+    adjCells: {
+      offsetX: number,
+      offsetY: number,
+      cell: Selectable,
+    }[]) {
       
     for (const adjCell of adjCells) {
 

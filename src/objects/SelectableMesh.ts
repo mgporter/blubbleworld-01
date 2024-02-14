@@ -96,12 +96,11 @@ class SelectableMesh extends Mesh {
     }
   }
 
-  hover(rejected?: boolean) {
-    if (!this.#isSelectable || this.#isHovered) return;
+  hover(accepted = true) {
+    if (!this.#isHoverable) return;
     this.#isHovered = true;
-    rejected === true ?
-      this.changeToRejectedAppearance() :  
-      this.changeToHoverAppearance();
+    if (accepted) this.changeToHoverAppearance(); 
+    else this.changeToRejectedAppearance();
   }
 
   /** 
