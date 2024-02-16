@@ -1,6 +1,6 @@
-import { Matrix4, Object3D, Vector3 } from "three";
+import { Matrix4, Vector3 } from "three";
 import { SelectableInstancedMesh } from "./SelectableInstancedMesh";
-import { Buildable } from "../Buildables";
+import { MyGroup } from "../systems/ModelInterface";
 
 class InstancedMeshSelectionObject {
 
@@ -12,7 +12,7 @@ class InstancedMeshSelectionObject {
   #index;
   #coordinates = new Vector3();
   #instancedMeshRef: SelectableInstancedMesh;
-  #buildables: Object3D[] = [];
+  #buildables: MyGroup[] = [];
   canPlaceBuildable;
 
 
@@ -141,18 +141,14 @@ class InstancedMeshSelectionObject {
     this.changeToDefaultAppearance(this.#index);
   }
 
-  // addBuildable(buildable: Buildable, id: number) {
-  //   this.#buildables.push({id: id, buildable: buildable});
-  // }
-
-  addBuildable(mesh: Object3D, building: Buildable, addToObject = true) {
+  addBuildable(model: MyGroup, addToObject = true) {
     if (addToObject) {
-      mesh.position.x += this.getCoordinates().x;
-      mesh.position.y += this.getCoordinates().y;
-      mesh.position.z += this.getCoordinates().z;
-      this.#instancedMeshRef.add(mesh);
+      model.position.x += this.getCoordinates().x;
+      model.position.y += this.getCoordinates().y;
+      model.position.z += this.getCoordinates().z;
+      this.#instancedMeshRef.add(model);
     }
-    this.#buildables.push(mesh);
+    this.#buildables.push(model);
   }
 
   getBuildables() {

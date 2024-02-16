@@ -3,13 +3,14 @@ import { Lights } from "../objects/Lights";
 import { Board } from "./Board";
 import { Animatable, Selectable, Selector } from "../types";
 import { MyFlyControls } from "./MyFlyControls";
-import { BaseSelector, ConnectingSelector, MouseEventHandler } from "./MouseEventHandlers";
+import { BaseSelector, MouseEventHandler } from "./MouseEventHandlers";
 import { SelectableMesh } from "../objects/SelectableMesh";
 import { SelectableInstancedMesh } from "../objects/SelectableInstancedMesh";
 import { MyScene } from "../objects/MyScene";
 import { MyPerspectiveCamera } from "../objects/MyPerspectiveCamera";
 import { Buildable, BuildableUserData } from "../Buildables";
-import { ModelInterface } from "./ModelInterface";
+import { ModelInterface, MyGroup } from "./ModelInterface";
+
 
 export default class CanvasInterface {
 
@@ -24,6 +25,8 @@ export default class CanvasInterface {
   #board: Board | null;
   #flyControls!: MyFlyControls | null;
   #mouseEvents!: MouseEventHandler | null;
+  #mouseEventsEnabled = false;
+  #flyControlsEnabled = false;
   #modelInterface;
 
   // Collections
@@ -76,25 +79,29 @@ export default class CanvasInterface {
   }
 
   enableFlyControls() {
-    if (!this.#flyControls) return;
+    if (!this.#flyControls || this.#flyControlsEnabled) return;
     this.#flyControls!.enable();
     this.#animatables.push(this.#flyControls!);
+    this.#flyControlsEnabled = true;
   }
 
   disableFlyControls() {
-    if (!this.#flyControls) return;
+    if (!this.#flyControls || !this.#flyControlsEnabled) return;
     this.#flyControls.dispose();
     this.#animatables.splice(this.#animatables.indexOf(this.#flyControls), 1);
+    this.#flyControlsEnabled = false;
   }
 
   enableMouseHandler() {
-    // if (!this.#mouseEvents) return;
-    this.#mouseEvents!.enable();
+    if (!this.#mouseEvents || this.#mouseEventsEnabled) return;
+    this.#mouseEvents.enable();
+    this.#mouseEventsEnabled = true;
   }
 
   disableMouseHandler() {
-    // if (!this.#mouseEvents) return;
-    this.#mouseEvents!.dispose();
+    if (!this.#mouseEvents || !this.#mouseEventsEnabled) return;
+    this.#mouseEvents.dispose();
+    this.#mouseEventsEnabled = false;
   }
 
   updateAnimatables(delta: number) {
@@ -109,11 +116,6 @@ export default class CanvasInterface {
     else this.#mouseEvents!.setSelector(new BaseSelector());
   }
 
-  getSelector() {
-    // if (!this.#mouseEvents) return;
-    return this.#mouseEvents!.getSelector();
-  }
-
   buildWorld(sizeX: number, sizeY: number, pondPercent: number, mountainPercent: number, seed: number | null) {
     const directionalLight = Lights.createDirectionalLight();
     const ambientLight = Lights.createAmbientLight();
@@ -122,29 +124,21 @@ export default class CanvasInterface {
     this.#board.addBoardToScene(this.#scene);
     this.#selectables = this.#board.getSelectables();
 
-    this.#mouseEvents!.setObjects(this.#selectables);
+    this.#mouseEvents?.setObjects(this.#selectables);
   }
 
   placeBuilding(building: Buildable, objects: Selectable[], target: Selectable) {
 
-    /**
-     * Current issues:
-     * 1. we check for the height of a stackable building by looking at the
-     * length of the array of the buildables array in the selectable. However,
-     * this array also contains connectors. This would be a problem if we wanted
-     * a stackable building with connectors.
-     */
-
     if (MouseEventHandler.isTwoPhaseSelector(building.selector)) {
       objects.forEach(x => {
         const model = this.#modelInterface.getModel(building.keyName);
-        x.addBuildable(model, building);
+        x.addBuildable(model);
       });
     } 
 
     else if (MouseEventHandler.isConnectingSelector(building.selector)) {
       const model = this.#modelInterface.getModel(building.keyName);
-      target.addBuildable(model, building);
+      target.addBuildable(model);
       const adjCells = building.selector.getConnectingObjects(target, objects);
 
       this.#addConnectorToBoard(building, model, adjCells);
@@ -156,11 +150,13 @@ export default class CanvasInterface {
 
       // get Height info
       const level = target.getBuildables().length;
-      model.position.z += level * building.mesh.heightIncrementor;
+
+      if (building.mesh)
+        model.position.z += level * building.mesh.heightIncrementor;
 
       objects.forEach(x => {
-        if (x === target) x.addBuildable(model, building);
-        else x.addBuildable(model, building, false);
+        if (x === target) x.addBuildable(model);
+        else x.addBuildable(model, false);
       });
 
     }
@@ -171,7 +167,7 @@ export default class CanvasInterface {
 
   #addConnectorToBoard(
     building: Buildable, 
-    model: Object3D, 
+    model: MyGroup, 
     adjCells: {
       offsetX: number,
       offsetY: number,
@@ -185,13 +181,12 @@ export default class CanvasInterface {
       connectorModel.position.y += 0;
       connectorModel.position.z += adjCell.offsetY * 0.5;
 
+      // Add connector to the actual mesh
       model.add(connectorModel);
 
-      const targetUserData = (model.userData as BuildableUserData);
-      const adjCellUserData = (adjCell.cell.getBuildables()[0].userData as BuildableUserData);
-
-      targetUserData.connectors.push(connectorModel);
-      adjCellUserData.connectors.push(connectorModel);
+      // Store a reference to the connector inside both of the parts being connected
+      model.userData.connectors.push(connectorModel);
+      adjCell.cell.getBuildables()[0].userData.connectors.push(connectorModel);
       
     }
   }
@@ -204,7 +199,6 @@ export default class CanvasInterface {
       const matrix = new Matrix4();
 
       instancedMesh.getMatrixAt(index, matrix);
-      console.log(matrix);
       const array = matrix.toArray();
       matrix.fromArray([
         array[0], array[1], array[2], array[3],
@@ -239,6 +233,21 @@ export default class CanvasInterface {
     mesh.parent?.remove(mesh);
     if (selectable) selectable.getBuildables().pop();
   }
+
+  moveBlubblesToCell(target: Selectable, number: number) {
+
+    const model = this.#modelInterface.getModel("blubbleBlue");
+
+    model.position.x += -(target.getCoordinates().y); // - is front / + is back
+    model.position.y += target.getCoordinates().z + 0.7;  // - is down / + is up
+    model.position.z += -(target.getCoordinates().x);  // - is left / + is right
+
+    // Only the scene doesn't have a parent, so the parent property
+    // here will never be null, because the scene is not a Selectable
+    target.getMesh().parent!.add(model);
+
+  }
+
 
   clearWorld() {
     this.#scene.clear();

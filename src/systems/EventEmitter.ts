@@ -1,4 +1,4 @@
-import { FinishSelectionObject, Selectable } from "../types";
+import { FinishSelectionObject } from "../types";
 
 // The record is: Record<EventNames, TypeOfDataToBeDispatched>
 
@@ -18,8 +18,6 @@ interface Emitter<T extends EventMap> {
 
 
 function EventEmitter<T extends EventMap>(): Emitter<T> {
-
-  // type K = keyof T;
 
   const eventList: {
     [K in keyof T]?: Record<number, (parameter: T[K]) => void>;
@@ -46,15 +44,20 @@ function EventEmitter<T extends EventMap>(): Emitter<T> {
     },
 
     subscribe(event, callback) {
+
       if (eventList[event]) eventList[event]![subscriptionIndex] = callback;
-      else eventList[event] = [callback];
+      else {
+        eventList[event] = {};
+        eventList[event]![subscriptionIndex] = callback;
+      }
       const thisIndex = subscriptionIndex;
       subscriptionIndex++;
 
       return {
         unsubscribe: () => {
-          if (eventList[event])
+          if (eventList[event]) {
             delete eventList[event]![thisIndex];
+          }
 
           if (isEmpty(eventList[event]!))
             delete eventList[event];

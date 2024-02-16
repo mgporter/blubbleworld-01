@@ -229,11 +229,11 @@ export class MouseEventHandler {
         this.#selector.handleSelectionMode(this._originOfSelection!, this._currentTarget);
 
     } else {
-
+      
       this.#selector.handleMouseOverTarget(mouseoverTarget);
 
       if (mouseoverTarget.isHoverable()) {
-
+        
         if (this._currentTarget) this.#selector.handleMouseLeaveTarget(this._currentTarget);
         this._currentTarget = mouseoverTarget;
 
@@ -808,7 +808,6 @@ export class ConnectingSelector extends FixedRectangleSelector {
         const adjCells = buildingArray.filter(x => this.#isAdjacentTo(currentCell!, x));
   
         for (const cell of adjCells) {
-          // cell.hover();
           this.#buildingChain.push(cell);
           queue.push(cell);
           buildingArray.splice(buildingArray.indexOf(cell), 1);

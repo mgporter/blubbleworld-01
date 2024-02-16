@@ -27,7 +27,6 @@ export function World({canvasInterface}: {canvasInterface: CanvasInterface}) {
     return () => {
       canvasInterface.clearWorld();
       canvasInterface.disableFlyControls();
-      canvasInterface.disposeAll();
     }
   }, [canvasInterface, camera, scene, raycaster, gl]);
 

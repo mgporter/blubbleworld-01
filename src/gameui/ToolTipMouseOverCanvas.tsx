@@ -1,9 +1,7 @@
 import { useEffect, useState } from "react";
 import { MouseEventEmitter } from "../systems/EventEmitter";
 import { Selectable } from "../types";
-import CTr from "../systems/CoordinateTranslator";
-import { BuildableUserData } from "../Buildables";
-import { capitalize } from "../Utils";
+import { boardToMouse, capitalize } from "../Utils";
 
 const displayGridName = (selectable: Selectable) => {
   const displayName = selectable.getMesh().displayName;
@@ -11,10 +9,10 @@ const displayGridName = (selectable: Selectable) => {
 
   // userData is defined as type Record<string, any> by Three.js, so we need a cast here
   const buildingName = selectable.getBuildables().length > 0 ?
-    ` with ${(selectable.getBuildables()[0].userData as BuildableUserData).displayName}` : "";
+    ` with ${selectable.getBuildables()[0].userData.displayName}` : "";
 
   const string = 
-    `${displayName}${buildingName} at (${CTr.boardToMouse(coord.x)}, ${CTr.boardToMouse(coord.y)})`;
+    `${displayName}${buildingName} at (${boardToMouse(coord.x)}, ${boardToMouse(coord.y)})`;
   
   return capitalize(string);
 

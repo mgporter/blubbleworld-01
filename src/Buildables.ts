@@ -1,5 +1,6 @@
 import { Selector } from './types';
 import { ConnectingSelector, FixedRectangleSelector, FlexibleRectangleSelector } from './systems/MouseEventHandlers';
+import { Object3D, Vector3 } from 'three';
 
 import houseIcon from './images/Building-house_icon_256.png';
 import hotelIcon from './images/Building-hotel_icon_256.png';
@@ -13,7 +14,10 @@ import houseGLB from './models/house.glb';
 import tentGLB from './models/tent.glb';
 import hotelGLB from './models/hotel.glb';
 import hotelConnectorGLB from './models/hotel_connector.glb';
-import { Object3D, Vector3 } from 'three';
+
+import blubbleBlueGLB from './models/blubble_blue.glb';
+import blubblePurpleGLB from './models/blubble_purple.glb';
+import blubbleRedGLB from './models/blubble_red.glb';
 
 export type MeshInfo = {
   fileName: string,
@@ -43,11 +47,12 @@ export type Buildable = {
   description: string,
   selector: Selector,
   iconAspectRatio: number,
-  mesh: MeshInfo,
+  mesh: MeshInfo | null,
   connector: MeshInfo | null,
 }
 
 export type BuildableType = "house" | "hotel" | "tent" | "skyscraper" | "bulldoze" | "demolish";
+export type BlubbleType = "blubbleBlue" | "blubblePurple" | "blubbleRed";
 
 type BuildableList = Record<BuildableType, Buildable>;
 
@@ -70,6 +75,7 @@ export const Buildables: BuildableList = {
       meshesToSelect: {canPlaceBuildable: true, isOccupied: false},
       meshesToHover: {canPlaceBuildable: true},
     }),
+    // selector: new MyAwesomeSelector(),
     mesh: {
       fileName: tentGLB,
       initialPosition: new Vector3(0.45, 0.45, 1.09),
@@ -185,13 +191,7 @@ export const Buildables: BuildableList = {
       meshesToSelect: {isOccupied: true},
       meshesToHover: {canPlaceBuildable: true},
     }),
-    mesh: {
-      fileName: skyscraperGLB,
-      initialPosition: new Vector3(0, 0, 0),
-      initialScale: new Vector3(1, 1, 1),
-      initialRotation: new Vector3(0, 0, 0),
-      heightIncrementor: 0,
-    },
+    mesh: null,
     connector: null,
   },
 
@@ -212,14 +212,33 @@ export const Buildables: BuildableList = {
       meshesToSelect: {name: "InstancedMountainCube", canPlaceBuildable: false, isOccupied: false},
       meshesToHover: {canPlaceBuildable: true},
     }),
-    mesh: {
-      fileName: skyscraperGLB,
-      initialPosition: new Vector3(0, 0, 0),
-      initialScale: new Vector3(1, 1, 1),
-      initialRotation: new Vector3(0, 0, 0),
-      heightIncrementor: 0,
-    },
+    mesh: null,
     connector: null,
   },
 
+}
+
+
+export const Blubbles: Record<BlubbleType, MeshInfo> = {
+  blubbleBlue: {
+    fileName: blubbleBlueGLB,
+    initialPosition: new Vector3(0, 0, 0),
+    initialScale: new Vector3(1, 1, 1),
+    initialRotation: new Vector3(0, 0, 0),
+    heightIncrementor: 0,
+  },
+  blubblePurple: {
+    fileName: blubblePurpleGLB,
+    initialPosition: new Vector3(0, 0, 0),
+    initialScale: new Vector3(1, 1, 1),
+    initialRotation: new Vector3(0, 0, 0),
+    heightIncrementor: 0,
+  },
+  blubbleRed: {
+    fileName: blubbleRedGLB,
+    initialPosition: new Vector3(0, 0, 0),
+    initialScale: new Vector3(1, 1, 1),
+    initialRotation: new Vector3(0, 0, 0),
+    heightIncrementor: 0,
+  },
 }

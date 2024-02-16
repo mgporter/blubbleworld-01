@@ -13,3 +13,7 @@ export function forEachFilter<T>(
 export function capitalize(s: string) {
   return s.charAt(0).toUpperCase() + s.substring(1);
 }
+
+export function boardToMouse(coordinate: number) {
+  return Math.abs(coordinate) + 1;
+}

@@ -1,5 +1,5 @@
-import { BufferGeometry, Color, Material, Mesh, Object3D, Vector3 } from "three";
-import { Buildable } from "../Buildables";
+import { BufferGeometry, Color, Material, Mesh, Vector3 } from "three";
+import { MyGroup } from "../systems/ModelInterface";
 
 class SelectableMesh extends Mesh {
 
@@ -15,7 +15,7 @@ class SelectableMesh extends Mesh {
   hoverColor = new Color(0x444444);
   rejectedColor = new Color(0xff0000);
 
-  #buildables: Object3D[] = [];
+  #buildables: MyGroup[] = [];
   canPlaceBuildable;
 
   constructor(geometry: BufferGeometry, material: Material, coordinates?: Vector3, selectable?: boolean) {
@@ -123,14 +123,14 @@ class SelectableMesh extends Mesh {
     this.changeToDefaultAppearance();
   }
 
-  addBuildable(mesh: Object3D, building: Buildable, addToObject = true) {
+  addBuildable(model: MyGroup, addToObject = true) {
     if (addToObject) {
-      mesh.position.x += this.getCoordinates().x;
-      mesh.position.y += this.getCoordinates().y;
-      mesh.position.z += this.getCoordinates().z;
-      this.add(mesh);
+      model.position.x += this.getCoordinates().x;
+      model.position.y += this.getCoordinates().y;
+      model.position.z += this.getCoordinates().z;
+      this.add(model);
     }
-    this.#buildables.push(mesh);
+    this.#buildables.push(model);
   }
 
   getBuildables() {

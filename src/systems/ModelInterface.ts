@@ -1,26 +1,42 @@
 import { GLTFLoader } from 'three/examples/jsm/Addons.js';
-import { BuildableType, BuildableUserData, Buildables, MeshInfo } from '../Buildables';
-import { Object3D } from 'three';
+import { BlubbleType, Blubbles, BuildableType, BuildableUserData, Buildables, MeshInfo } from '../Buildables';
+import { Group } from 'three';
 
-type modelHolder = Record<string, Object3D>;
+export interface MyGroup extends Omit<Group, "userData"> {
+  userData: BuildableUserData;
+}
 
 class ModelInterface {
 
   #GLTFLoader;
-  #models: modelHolder;
+  #models: Record<string, MyGroup>;
+  #blubbles: Record<string, MyGroup>;
 
   constructor() {
     this.#GLTFLoader = new GLTFLoader();
     this.#models = {};
+    this.#blubbles = {};
 
-    this.init();
+    this.#loadbuildings();
+    this.#loadBlubbles();
   }
 
-  init() {
+  #loadBlubbles() {
 
-    for (const buildingName in Buildables) {
+    for (const blubbleKey in Blubbles) {
+      const blubble = Blubbles[(blubbleKey as BlubbleType)];
+      this.#loadGLTF(blubble, blubbleKey);
+    }
 
-      const buildable = Buildables[(buildingName as BuildableType)];
+  }
+
+  #loadbuildings() {
+
+    for (const buildingKey in Buildables) {
+
+      const buildable = Buildables[(buildingKey as BuildableType)];
+
+      if (!buildable.mesh) continue;
 
       const userData: BuildableUserData = {
         displayName: buildable.displayName,
@@ -42,7 +58,7 @@ class ModelInterface {
   }
 
   getModel(modelName: string) {
-    return this.#models[modelName].clone();
+    return (this.#models[modelName].clone() as MyGroup);
   }
 
   #loadGLTF(meshInfo: MeshInfo, name: string, userData?: BuildableUserData) {
@@ -52,7 +68,11 @@ class ModelInterface {
     const rotation = meshInfo.initialRotation;
 
     this.#GLTFLoader.load(glbFile, (glb) => {
-      const model = glb.scene;
+
+      // override the model type to use MyGroup instead of Group.
+      // This way, we can control the type definitions, particularly
+      // the userData type definition.
+      const model = (glb.scene as MyGroup);
 
       if (userData) {
         model.userData = userData;

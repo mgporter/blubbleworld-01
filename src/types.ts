@@ -12,6 +12,7 @@ import { LineBasicMaterial,
   SpriteMaterial } from "three";
 import { SelectableMesh } from "./objects/SelectableMesh";
 import { InstancedMeshSelectionObject } from "./objects/InstancedMeshSelectionObject";
+import { FixedRectangleSelector } from "./systems/MouseEventHandlers";
 
 export type ColoredMaterial = 
   MeshLambertMaterial | 
@@ -54,6 +55,14 @@ export type FinishSelectionObject = {
   data?: FinishSelectionData,
 }
 
+export type NonNullableFinishSelectionObject = {
+  objects: Selectable[],
+  target: Selectable,
+  data: FinishSelectionData,
+}
+
+
+
 export interface Selector {
   updateObjects: (selectablesToUpdate: Selectable[]) => void;
   handleMouseOverTarget: (target: Selectable) => void;
@@ -64,6 +73,7 @@ export interface Selector {
   init: () => void;
   isSelectionValid: boolean;
 }
+
 
 export interface SinglePhaseSelector extends Selector {
 

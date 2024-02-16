@@ -3,14 +3,13 @@ import BuildMenu from './BuildMenu';
 import ToolTipMouseOverCanvas from './ToolTipMouseOverCanvas';
 import QuestionDialogBox from './QuestionDialogBox';
 import { MouseEventEmitter } from '../systems/EventEmitter';
-import { Buildable, BuildableType, BuildableUserData, Buildables } from '../Buildables';
-import { FinishSelectionObject, Selectable } from '../types';
+import { BuildableType, BuildableUserData, Buildables } from '../Buildables';
+import { FinishSelectionObject, NonNullableFinishSelectionObject } from '../types';
 import CanvasInterface from '../systems/CanvasInterface';
 import { useStore } from './Store';
-import UiArea from './UiArea';
-import { UiProps } from './UiProperties';
 import TopBar from './TopBar';
 import { MouseEventHandler } from '../systems/MouseEventHandlers';
+import { C } from '../Constants';
 
 
 interface GameUiContainerProps {
@@ -23,7 +22,8 @@ export default function GameUiContainer({canvasInterface}: GameUiContainerProps)
   const money = useStore((state) => state.money);
 
   const [selectedBuilding, setSelectedBuilding] = useState<BuildableType>("tent");
-  const [questionDialogData, setQuestionDialogData] = useState<FinishSelectionObject>(({} as FinishSelectionObject));
+  const [questionDialogData, setQuestionDialogData] = 
+    useState<NonNullableFinishSelectionObject>(({} as NonNullableFinishSelectionObject));
   const [showQuestionDialog, setShowQuestionDialog] = useState(false);
   const [buildMenuEnabled, setBuildMenuEnabled] = useState(true);
   const [showToolTips, setShowToolTips] = useState(true);
@@ -34,48 +34,48 @@ export default function GameUiContainer({canvasInterface}: GameUiContainerProps)
     canvasInterface.setSelector(selector);
   }, [canvasInterface]);
 
-  const onBuildingPlace = useCallback((result: FinishSelectionObject) => {
-    setQuestionDialogData(result);
+  const showQuestionDialogOnSelectionFinished = useCallback(() => {
     setShowQuestionDialog(true);
     setBuildMenuEnabled(false);
     setShowToolTips(false);
-    canvasInterface.setSelector(null);
+    canvasInterface.disableMouseHandler();
+    canvasInterface.disableFlyControls();
   }, [canvasInterface]);
 
   const handleCloseQuestionDialog = useCallback(() => {
     setShowQuestionDialog(false);
-    const selector = Buildables[selectedBuilding].selector;
-    canvasInterface.setSelector(selector);
+    canvasInterface.enableMouseHandler();
+    canvasInterface.enableFlyControls();
     setBuildMenuEnabled(true);
     setShowToolTips(true);
-  }, [selectedBuilding, setShowQuestionDialog, canvasInterface]);
-
-  useEffect(() => {
-    const subscribeObj = MouseEventEmitter.subscribe("selectionFinished", onBuildingPlace);
-
-    return () => {
-      subscribeObj.unsubscribe();
-    }
-  }, [onBuildingPlace]);
-
-  // useEffect(() => {
-  //   canvasInterface.placeBuilding(Buildables["tent"], 1, 1, 1);
-  // }, [canvasInterface]);
+  }, [setShowQuestionDialog, canvasInterface]);
 
 
-  function placeBuildingOnCanvas() {
+  const purchaseIfSufficientFunds = useCallback((price: number, quantity: number) => {
+
+    const totalPrice = price * quantity;
+    if (totalPrice <= money) {
+      spendMoney(totalPrice);
+      return true;
+    } else return false;
+
+  }, [money, spendMoney]);
+
+
+  const placeBuildingOnCanvas = useCallback((result?: NonNullableFinishSelectionObject) => {
     handleCloseQuestionDialog();
 
-    const building = Buildables[selectedBuilding];
+    const target = result ? result.target : questionDialogData.target;
+    const objects = result ? result.objects : questionDialogData.objects;
 
-    if (!(questionDialogData.objects && questionDialogData.target)) return;
+    const building = Buildables[selectedBuilding];
     
     switch(selectedBuilding) {
 
       case "bulldoze": {
 
         if (purchaseIfSufficientFunds(Buildables[selectedBuilding].price, 1)) {
-          canvasInterface.bulldozeMountain(questionDialogData.objects);
+          canvasInterface.bulldozeMountain(objects);
         }
 
         break;
@@ -83,11 +83,11 @@ export default function GameUiContainer({canvasInterface}: GameUiContainerProps)
 
       case "demolish": {
 
-        const price = questionDialogData.target.getBuildables().length > 0 ?
-          (questionDialogData.target.getBuildables()[0].userData as BuildableUserData).price : 0;
+        const price = target.getBuildables().length > 0 ?
+          target.getBuildables()[0].userData.price : 0;
 
         if (purchaseIfSufficientFunds(price, 1)) {
-          canvasInterface.demolishBuildings(questionDialogData.objects);
+          canvasInterface.demolishBuildings(objects);
         }
 
         break;
@@ -96,30 +96,48 @@ export default function GameUiContainer({canvasInterface}: GameUiContainerProps)
       // For all buildings
       default: {
 
+        // canvasInterface.moveBlubblesToCell(target, 1);
+
         const quantityBought = MouseEventHandler.isTwoPhaseSelector(building.selector) ?
-          questionDialogData.objects.length : 1;
+          objects.length : 1;
         
         if (purchaseIfSufficientFunds(Buildables[selectedBuilding].price, quantityBought)) {
           canvasInterface.placeBuilding(
             Buildables[selectedBuilding], 
-            questionDialogData.objects, 
-            questionDialogData.target);
+            objects, 
+            target);
         }
         
         break;
       }
     }
-  }
+  }, [
+    canvasInterface, 
+    handleCloseQuestionDialog, 
+    purchaseIfSufficientFunds, 
+    selectedBuilding,
+    questionDialogData]);
 
-  function purchaseIfSufficientFunds(price: number, quantity: number) {
 
-    const totalPrice = price * quantity;
-    if (totalPrice <= money) {
-      spendMoney(totalPrice);
-      return true;
-    } else return false;
+  const handleSelectionFinished = useCallback((result: FinishSelectionObject) => {
+    // check for any nulls, and if not, turn the result into 
+    // a NonNullableFinishSelectionObject so we don't have to check again elsewhere
+    if (!(result.data && result.objects && result.target)) return;
+    const nonNullableResult = {target: result.target, objects: result.objects, data: result.data}
 
-  }
+    setQuestionDialogData(nonNullableResult);
+
+    if (C.showQuestions) showQuestionDialogOnSelectionFinished();
+    else placeBuildingOnCanvas(nonNullableResult);
+  }, [placeBuildingOnCanvas, showQuestionDialogOnSelectionFinished]);
+
+
+  useEffect(() => {
+    const subscribeObj = MouseEventEmitter.subscribe("selectionFinished", handleSelectionFinished);
+    return () => {
+      subscribeObj.unsubscribe();
+    }
+  }, [handleSelectionFinished]);
 
 
 
