@@ -3,7 +3,7 @@ import BuildMenu from './BuildMenu';
 import ToolTipMouseOverCanvas from './ToolTipMouseOverCanvas';
 import QuestionDialogBox from './QuestionDialogBox';
 import { MouseEventEmitter } from '../systems/EventEmitter';
-import { BuildableType, BuildableUserData, Buildables } from '../Buildables';
+import { BuildableType, Buildables } from '../Buildables';
 import { FinishSelectionObject, NonNullableFinishSelectionObject } from '../types';
 import CanvasInterface from '../systems/CanvasInterface';
 import { useStore } from './Store';
@@ -19,9 +19,11 @@ interface GameUiContainerProps {
 export default function GameUiContainer({canvasInterface}: GameUiContainerProps) {
 
   const spendMoney = useStore((state) => state.spendMoney);
+  const decrementOnePerson = useStore((state) => state.decrementOnePerson);
+  const incrementPeople = useStore((state) => state.incrementPeople);
   const money = useStore((state) => state.money);
 
-  const [selectedBuilding, setSelectedBuilding] = useState<BuildableType>("tent");
+  const [selectedBuilding, setSelectedBuilding] = useState<BuildableType>("noSelection");
   const [questionDialogData, setQuestionDialogData] = 
     useState<NonNullableFinishSelectionObject>(({} as NonNullableFinishSelectionObject));
   const [showQuestionDialog, setShowQuestionDialog] = useState(false);
@@ -83,11 +85,16 @@ export default function GameUiContainer({canvasInterface}: GameUiContainerProps)
 
       case "demolish": {
 
-        const price = target.getBuildables().length > 0 ?
-          target.getBuildables()[0].userData.price : 0;
+        if (target.getBuildables().length === 0) return;
 
-        if (purchaseIfSufficientFunds(price, 1)) {
+        const buildingData = target.getBuildables()[0].userData;
+        const connectorCount = buildingData.connections.length;
+        const connectorCapacity = Buildables[buildingData.keyName].connectorCapacity || 0;
+        console.log(connectorCount, connectorCapacity);
+
+        if (purchaseIfSufficientFunds(buildingData.price, 1)) {
           canvasInterface.demolishBuildings(objects);
+          incrementPeople(buildingData.capacity + (connectorCount * connectorCapacity));
         }
 
         break;
@@ -96,16 +103,11 @@ export default function GameUiContainer({canvasInterface}: GameUiContainerProps)
       // For all buildings
       default: {
 
-        // canvasInterface.moveBlubblesToCell(target, 1);
-
         const quantityBought = MouseEventHandler.isTwoPhaseSelector(building.selector) ?
           objects.length : 1;
         
-        if (purchaseIfSufficientFunds(Buildables[selectedBuilding].price, quantityBought)) {
-          canvasInterface.placeBuilding(
-            Buildables[selectedBuilding], 
-            objects, 
-            target);
+        if (purchaseIfSufficientFunds(building.price, quantityBought)) {
+          canvasInterface.placeBuilding(building, objects, target, decrementOnePerson);
         }
         
         break;
@@ -116,7 +118,10 @@ export default function GameUiContainer({canvasInterface}: GameUiContainerProps)
     handleCloseQuestionDialog, 
     purchaseIfSufficientFunds, 
     selectedBuilding,
-    questionDialogData]);
+    questionDialogData,
+    decrementOnePerson,
+    incrementPeople,
+  ]);
 
 
   const handleSelectionFinished = useCallback((result: FinishSelectionObject) => {
@@ -150,7 +155,8 @@ export default function GameUiContainer({canvasInterface}: GameUiContainerProps)
     <div id="gameui-container" className='absolute z-30 w-full h-svh flex pointer-events-none'>
       <BuildMenu 
         onBuildingSelect={onBuildingSelect}
-        buildMenuEnabled={buildMenuEnabled} />
+        buildMenuEnabled={buildMenuEnabled}
+        selectedBuilding={selectedBuilding} />
 
       <div className="relative h-full w-full flex flex-col justify-between">
 

@@ -1,15 +1,17 @@
-import { Camera, Matrix4, Object3D, Raycaster, Scene, WebGLRenderer } from "three";
+import { Camera, Matrix4, Raycaster, Scene, WebGLRenderer } from "three";
 import { Lights } from "../objects/Lights";
 import { Board } from "./Board";
-import { Animatable, Selectable, Selector } from "../types";
+import { Selectable, Selector, Animatable } from "../types";
 import { MyFlyControls } from "./MyFlyControls";
-import { BaseSelector, MouseEventHandler } from "./MouseEventHandlers";
+import { BaseSelector, ConnectingSelector, MouseEventHandler } from "./MouseEventHandlers";
 import { SelectableMesh } from "../objects/SelectableMesh";
 import { SelectableInstancedMesh } from "../objects/SelectableInstancedMesh";
 import { MyScene } from "../objects/MyScene";
 import { MyPerspectiveCamera } from "../objects/MyPerspectiveCamera";
-import { Buildable, BuildableUserData } from "../Buildables";
+import { Buildable } from "../Buildables";
 import { ModelInterface, MyGroup } from "./ModelInterface";
+import { Blubble } from "../objects/Blubble";
+import { C } from "../Constants";
 
 
 export default class CanvasInterface {
@@ -127,52 +129,68 @@ export default class CanvasInterface {
     this.#mouseEvents?.setObjects(this.#selectables);
   }
 
-  placeBuilding(building: Buildable, objects: Selectable[], target: Selectable) {
+  placeBuilding(building: Buildable, objects: Selectable[], target: Selectable, callback: () => void) {
 
-    if (MouseEventHandler.isTwoPhaseSelector(building.selector)) {
-      objects.forEach(x => {
+    switch(building.keyName) {
+      case "tent":
+      case "house": {
+
+        objects.forEach(cell => {
+          const model = this.#modelInterface.getModel(building.keyName);
+          cell.addBuildable(model);
+          this.moveBlubblesToCell(cell, building.capacity, callback);
+        });
+
+        break;
+      }
+
+      case "hotel": {
+
         const model = this.#modelInterface.getModel(building.keyName);
-        x.addBuildable(model);
-      });
-    } 
+        target.addBuildable(model);
 
-    else if (MouseEventHandler.isConnectingSelector(building.selector)) {
-      const model = this.#modelInterface.getModel(building.keyName);
-      target.addBuildable(model);
-      const adjCells = building.selector.getConnectingObjects(target, objects);
+        const adjCells = ConnectingSelector.getConnectingObjects(target, objects);
+        this.#addConnectorsToBoard(building, model, adjCells, callback);
 
-      this.#addConnectorToBoard(building, model, adjCells);
+        this.moveBlubblesToCell(target, building.capacity, callback);
+
+        break;
+      }
+
+
+      case "skyscraper": {
+
+        const model = this.#modelInterface.getModel(building.keyName);
+        const height = target.getBuildables().length;
+        const peoplePerCell = building.capacity / objects.length;
+  
+        if (building.mesh)
+          model.position.z += height * building.mesh.heightIncrementor;
+  
+        objects.forEach(cell => {
+          if (cell === target) cell.addBuildable(model);
+          else cell.addBuildable(model, false);
+          this.moveBlubblesToCell(cell, peoplePerCell, callback);
+        });
+
+        break;
+      }
     }
-    
-    else {
-      // Single Phase selector: currently only for Skyscraper
-      const model = this.#modelInterface.getModel(building.keyName);
 
-      // get Height info
-      const level = target.getBuildables().length;
-
-      if (building.mesh)
-        model.position.z += level * building.mesh.heightIncrementor;
-
-      objects.forEach(x => {
-        if (x === target) x.addBuildable(model);
-        else x.addBuildable(model, false);
-      });
-
-    }
 
     this.#mouseEvents?.updateObjects(objects);
 
   }
 
-  #addConnectorToBoard(
+  #addConnectorsToBoard(
     building: Buildable, 
     model: MyGroup, 
     adjCells: {
       offsetX: number,
       offsetY: number,
       cell: Selectable,
-    }[]) {
+    }[],
+    callback: () => void) {
       
     for (const adjCell of adjCells) {
 
@@ -184,9 +202,18 @@ export default class CanvasInterface {
       // Add connector to the actual mesh
       model.add(connectorModel);
 
-      // Store a reference to the connector inside both of the parts being connected
-      model.userData.connectors.push(connectorModel);
-      adjCell.cell.getBuildables()[0].userData.connectors.push(connectorModel);
+      // If we want to add connections between cells with
+      // multiple buildings, or with multiple levels, we will have to
+      // change this.
+      const adjBuilding = adjCell.cell.getBuildables()[0];
+
+      // Store a reference to the buildings which are connected to each other
+      model.userData.connections.push({connector: connectorModel, adjBuilding: adjBuilding});
+      adjBuilding.userData.connections.push({connector: connectorModel, adjBuilding: model});
+      // adjCell.cell.getBuildables()[0].userData.connectors.push(connectorModel);
+
+      // Create blubbles for each connector
+      this.moveBlubblesToCell(adjCell.cell, building.connectorCapacity, callback);
       
     }
   }
@@ -200,6 +227,8 @@ export default class CanvasInterface {
 
       instancedMesh.getMatrixAt(index, matrix);
       const array = matrix.toArray();
+
+      // Copy the array exactly, except for one value set to "1"
       matrix.fromArray([
         array[0], array[1], array[2], array[3],
         array[4], array[5], array[6], array[7],
@@ -225,29 +254,55 @@ export default class CanvasInterface {
     this.#mouseEvents?.updateObjects(selectables);
   }
 
-  #removeBuilding(mesh: Object3D, selectable?: Selectable) {
-    if ((mesh.userData as BuildableUserData).connectors) {
-      (mesh.userData as BuildableUserData).connectors
-        .forEach(x => x.parent?.remove(x));
+  #removeBuilding(mesh: MyGroup, selectable: Selectable) {
+    if (mesh.userData.connections.length > 0) {
+
+      mesh.userData.connections.forEach(connection => {
+        
+        // Remove this connector from the userData of adjacent buildings
+        connection.adjBuilding.userData.connections = 
+          connection.adjBuilding.userData.connections.filter(adjConnection => (
+            adjConnection.connector != connection.connector
+          ));
+
+        // Remove this connector from whatever parent it has
+        connection.connector.parent?.remove(connection.connector);
+      });
+
     }
+
     mesh.parent?.remove(mesh);
-    if (selectable) selectable.getBuildables().pop();
+    selectable.removeBuilding();
   }
 
-  moveBlubblesToCell(target: Selectable, number: number) {
+  moveBlubblesToCell(target: Selectable, count: number = 1, callback: () => void) {
+    
+    let current = 0;
 
-    const model = this.#modelInterface.getModel("blubbleBlue");
+    const interval = setInterval(() => {
 
-    model.position.x += -(target.getCoordinates().y); // - is front / + is back
-    model.position.y += target.getCoordinates().z + 0.7;  // - is down / + is up
-    model.position.z += -(target.getCoordinates().x);  // - is left / + is right
+      const blubbleModel = this.#modelInterface.getRandomBlubble();
+      const blubble = new Blubble(blubbleModel, callback);
+  
+      blubble.setTravel("left", target.getCoordinates());
+  
+      blubble.setBounceSpeed(0.5 + Math.random());
+      blubble.setTravelSpeed(C.blubbleBaseTravelSpeed);
+  
+      this.#animatables.push(blubble);
 
-    // Only the scene doesn't have a parent, so the parent property
-    // here will never be null, because the scene is not a Selectable
-    target.getMesh().parent!.add(model);
+      blubble.bounce();
+      blubble.travel();
+
+      // Only the scene doesn't have a parent, so the parent property
+      // here will never be null, because the scene is not a Selectable
+      target.getMesh().parent!.add(blubble.getModel());
+
+      if (++current == count) clearInterval(interval);
+
+    }, 100 + Math.random() * 150 - 25);
 
   }
-
 
   clearWorld() {
     this.#scene.clear();

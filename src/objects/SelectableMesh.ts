@@ -137,6 +137,10 @@ class SelectableMesh extends Mesh {
     return this.#buildables;
   }
 
+  removeBuilding() {
+    this.#buildables.pop();
+  }
+
   isOccupied() {
     return this.#buildables.length > 0;
   }

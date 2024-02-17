@@ -1,30 +1,33 @@
 import { GLTFLoader } from 'three/examples/jsm/Addons.js';
-import { BlubbleType, Blubbles, BuildableType, BuildableUserData, Buildables, MeshInfo } from '../Buildables';
-import { Group } from 'three';
+import { BlubbleType, BlubbleTypeArray, Blubbles, BuildableType, BuildableUserData, Buildables, MeshInfo } from '../Buildables';
+import { AnimationAction, AnimationClip, AnimationMixer, Group, Vector3, VectorKeyframeTrack } from 'three';
+import { Selectable } from '../types';
 
 export interface MyGroup extends Omit<Group, "userData"> {
   userData: BuildableUserData;
 }
 
+
+
 class ModelInterface {
 
   #GLTFLoader;
   #models: Record<string, MyGroup>;
-  #blubbles: Record<string, MyGroup>;
 
   constructor() {
     this.#GLTFLoader = new GLTFLoader();
     this.#models = {};
-    this.#blubbles = {};
 
     this.#loadbuildings();
     this.#loadBlubbles();
+
   }
 
   #loadBlubbles() {
 
     for (const blubbleKey in Blubbles) {
       const blubble = Blubbles[(blubbleKey as BlubbleType)];
+
       this.#loadGLTF(blubble, blubbleKey);
     }
 
@@ -44,7 +47,7 @@ class ModelInterface {
         plural: buildable.plural,
         price: buildable.price,
         capacity: buildable.capacity,
-        connectors: [],
+        connections: [],
       }
 
       this.#loadGLTF(buildable.mesh, buildable.keyName, userData);
@@ -61,6 +64,11 @@ class ModelInterface {
     return (this.#models[modelName].clone() as MyGroup);
   }
 
+  getRandomBlubble() {
+    const randomNumber = Math.floor(Math.random() * BlubbleTypeArray.length);
+    return this.getModel(BlubbleTypeArray[randomNumber]);
+  }
+
   #loadGLTF(meshInfo: MeshInfo, name: string, userData?: BuildableUserData) {
     const glbFile = meshInfo.fileName;
     const position = meshInfo.initialPosition;
@@ -72,7 +80,7 @@ class ModelInterface {
       // override the model type to use MyGroup instead of Group.
       // This way, we can control the type definitions, particularly
       // the userData type definition.
-      const model = (glb.scene as MyGroup);
+      const model = glb.scene as MyGroup;
 
       if (userData) {
         model.userData = userData;

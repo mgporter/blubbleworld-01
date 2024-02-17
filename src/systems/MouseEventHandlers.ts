@@ -805,7 +805,7 @@ export class ConnectingSelector extends FixedRectangleSelector {
 
       while (levelSize-- > 0) {
         const currentCell = queue.shift();
-        const adjCells = buildingArray.filter(x => this.#isAdjacentTo(currentCell!, x));
+        const adjCells = buildingArray.filter(x => ConnectingSelector.#isAdjacentTo(currentCell!, x));
   
         for (const cell of adjCells) {
           this.#buildingChain.push(cell);
@@ -862,7 +862,7 @@ export class ConnectingSelector extends FixedRectangleSelector {
 
   }
 
-  #isAdjacentTo(target: Selectable, other: Selectable) {
+  static #isAdjacentTo(target: Selectable, other: Selectable) {
     const targetC = target.getCoordinates();
     const otherC = other.getCoordinates();
 
@@ -871,11 +871,11 @@ export class ConnectingSelector extends FixedRectangleSelector {
       (Math.abs(targetC.y - otherC.y) <= 1 && targetC.x === otherC.x));
   }
 
-  getConnectingObjects(target: Selectable, objects: Selectable[]) {
+  static getConnectingObjects(target: Selectable, objects: Selectable[]) {
     const targetC = target.getCoordinates();
-
+      
     return objects
-      .filter(x => this.#isAdjacentTo(target, x))
+      .filter(x => ConnectingSelector.#isAdjacentTo(target, x))
       .map(cell => {
         return {
             offsetX: cell.getCoordinates().x - targetC.x,

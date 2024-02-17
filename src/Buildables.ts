@@ -1,5 +1,5 @@
 import { Selector } from './types';
-import { ConnectingSelector, FixedRectangleSelector, FlexibleRectangleSelector } from './systems/MouseEventHandlers';
+import { BaseSelector, ConnectingSelector, FixedRectangleSelector, FlexibleRectangleSelector } from './systems/MouseEventHandlers';
 import { Object3D, Vector3 } from 'three';
 
 import houseIcon from './images/Building-house_icon_256.png';
@@ -8,6 +8,7 @@ import tentIcon from './images/Building-tent_icon_256.png';
 import skyscraperIcon from './images/Building-skyscraper_icon_256.png';
 import bulldozerIcon from './images/Bulldozer_icon_256.png';
 import demolishIcon from './images/Demolish_icon_256.png';
+import buildMenuIcon from './images/Build-menu-icon_256.png';
 
 import skyscraperGLB from './models/skyscraper.glb';
 import houseGLB from './models/house.glb';
@@ -18,6 +19,7 @@ import hotelConnectorGLB from './models/hotel_connector.glb';
 import blubbleBlueGLB from './models/blubble_blue.glb';
 import blubblePurpleGLB from './models/blubble_purple.glb';
 import blubbleRedGLB from './models/blubble_red.glb';
+import { MyGroup } from './systems/ModelInterface';
 
 export type MeshInfo = {
   fileName: string,
@@ -33,7 +35,10 @@ export type BuildableUserData = {
   plural: string,
   price: number,
   capacity: number,
-  connectors: Object3D[],
+  connections: {
+    connector: MyGroup,
+    adjBuilding: MyGroup,
+  }[],
 }
 
 export type Buildable = {
@@ -47,12 +52,14 @@ export type Buildable = {
   description: string,
   selector: Selector,
   iconAspectRatio: number,
-  mesh: MeshInfo | null,
-  connector: MeshInfo | null,
+  mesh?: MeshInfo,
+  connector?: MeshInfo,
+  connectorCapacity?: number,
 }
 
-export type BuildableType = "house" | "hotel" | "tent" | "skyscraper" | "bulldoze" | "demolish";
+export type BuildableType = "house" | "hotel" | "tent" | "skyscraper" | "bulldoze" | "demolish" | "noSelection";
 export type BlubbleType = "blubbleBlue" | "blubblePurple" | "blubbleRed";
+export const BlubbleTypeArray = ["blubbleBlue", "blubblePurple", "blubbleRed"];
 
 type BuildableList = Record<BuildableType, Buildable>;
 
@@ -83,7 +90,6 @@ export const Buildables: BuildableList = {
       initialRotation: new Vector3(Math.PI/2, -Math.PI, 0),
       heightIncrementor: 0.48,
     },
-    connector: null,
   },
 
   house: {
@@ -111,7 +117,6 @@ export const Buildables: BuildableList = {
       initialRotation: new Vector3(Math.PI/2, -Math.PI, 0),
       heightIncrementor: 0,
     },
-    connector: null,
   },
 
   hotel: {
@@ -145,7 +150,8 @@ export const Buildables: BuildableList = {
       initialScale: new Vector3(1, 1, 1),
       initialRotation: new Vector3(0, -Math.PI/2, 0),
       heightIncrementor: 0,
-    }
+    },
+    connectorCapacity: 2,
   },
 
   skyscraper: {
@@ -171,7 +177,6 @@ export const Buildables: BuildableList = {
       initialRotation: new Vector3(Math.PI/2, Math.PI/2, 0),
       heightIncrementor: 0.48,
     },
-    connector: null,
   },
 
   demolish: {
@@ -191,8 +196,6 @@ export const Buildables: BuildableList = {
       meshesToSelect: {isOccupied: true},
       meshesToHover: {canPlaceBuildable: true},
     }),
-    mesh: null,
-    connector: null,
   },
 
   bulldoze: {
@@ -212,9 +215,20 @@ export const Buildables: BuildableList = {
       meshesToSelect: {name: "InstancedMountainCube", canPlaceBuildable: false, isOccupied: false},
       meshesToHover: {canPlaceBuildable: true},
     }),
-    mesh: null,
-    connector: null,
   },
+
+  noSelection: {
+    displayName: "No selection",
+    keyName: "noSelection",
+    plural: "noSelection",
+    price: 0,
+    icon: buildMenuIcon,
+    capacity: 0,
+    maxHeight: 0,
+    description: "No building has been selected",
+    selector: new BaseSelector(),
+    iconAspectRatio: 0.94140625,
+  }
 
 }
 

@@ -1,5 +1,4 @@
-import NavSelectionOption from "./NavSelectionOption"
-import buildBuildingIcon from '../images/Building-simple_house_256.png';
+import NavSelectionOption from "./NavSelectionOption";
 
 import { useState } from "react";
 import { BuildableType, Buildables } from "../Buildables";
@@ -10,9 +9,10 @@ import { UiProps } from "./UiProperties";
 interface BuildMenuProps {
   onBuildingSelect: (buildingType: BuildableType) => void,
   buildMenuEnabled: boolean,
+  selectedBuilding: BuildableType,
 }
 
-export default function BuildMenu({onBuildingSelect, buildMenuEnabled}: BuildMenuProps) {
+export default function BuildMenu({onBuildingSelect, buildMenuEnabled, selectedBuilding}: BuildMenuProps) {
 
   const [showMenu, setShowMenu] = useState(false);
 
@@ -58,7 +58,10 @@ export default function BuildMenu({onBuildingSelect, buildMenuEnabled}: BuildMen
           "bg-slate-700 transition-colors duration-100 cursor-pointer flex items-center" +
           "grow-0 " + (buildMenuEnabled ? "hover:bg-slate-600 active:bg-slate-400 ": " ")}
           onClick={() => {if (buildMenuEnabled) setShowMenu(!showMenu)}}>
-            <img src={buildBuildingIcon} className="size-14 grow-0 shrink-0" />
+            <div className="size-14 grow-0 shrink-0 flex justify-center items-center overflow-hidden">
+              <img src={Buildables[selectedBuilding].icon} 
+                className="" />
+            </div>
             <motion.div 
               animate={{opacity: itemsOpacity, transition: {delay: itemsDelay, type: "tween", duration: itemsDuration}}}
               initial={false}
