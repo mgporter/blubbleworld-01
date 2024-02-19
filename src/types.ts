@@ -102,3 +102,10 @@ export interface Control {
 export interface Animatable {
   update: (delta: number) => void;
 }
+
+export interface BoardToolTip {
+  message: string;
+  textColor: string;
+  bgColor: string;
+  duration: number;
+}

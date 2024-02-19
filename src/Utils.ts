@@ -1,3 +1,7 @@
+import { NonNullableFinishSelectionObject } from "./types";
+import { Buildable } from "./Buildables";
+import { MouseEventHandler } from "./systems/MouseEventHandlers";
+
 export function forEachFilter<T>(
   objects: T[],
   filter: (x: T) => boolean, 
@@ -16,4 +20,29 @@ export function capitalize(s: string) {
 
 export function boardToMouse(coordinate: number) {
   return Math.abs(coordinate) + 1;
+}
+
+export function calculateTransactionAmount(building: Buildable, selection: NonNullableFinishSelectionObject) {
+
+  switch(building.keyName) {
+
+    case "bulldoze": {
+      return building.price;
+    }
+
+    case "demolish": {
+      if (selection.target.isOccupied()) {
+        return selection.target.getBuildables()[0].userData.price;
+      } else {
+        return Number.MAX_VALUE;
+      }
+    }
+
+    // For all buildings
+    default: {
+      const quantityBought = MouseEventHandler.isTwoPhaseSelector(building.selector) ?
+        selection.objects.length : 1;
+      return building.price * quantityBought;
+    }
+  }
 }

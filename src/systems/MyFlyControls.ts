@@ -8,8 +8,10 @@ import {
 
 import { C } from '../Constants';
 import { Animatable } from '../types';
+import { MouseEventEmitter } from './EventEmitter';
 
 const _changeEvent = { type: 'change' };
+const updateEvent = new Event("cameraUpdate");
 
 let _contextmenu: (e: Event) => void;
 let _pointermove: (e: Event) => void;
@@ -33,6 +35,9 @@ class MyFlyControls extends EventDispatcher implements Animatable {
   moveDownKey = "KeyS";
   moveLeftKey = "KeyA";
   moveRightKey = "KeyD";
+
+  dispatchEvents = false;
+  dispatchTimeout = 0;
 
   #camera;
   #enableLimits;
@@ -152,6 +157,8 @@ class MyFlyControls extends EventDispatcher implements Animatable {
       return;
     }
 
+    this.dispatchEvents = true;
+
     switch ( event.code ) {
 
       case 'ShiftLeft':
@@ -180,6 +187,7 @@ class MyFlyControls extends EventDispatcher implements Animatable {
 
     this.updateMovementVector();
     this.updateRotationVector();
+    
 
   }
 
@@ -215,6 +223,30 @@ class MyFlyControls extends EventDispatcher implements Animatable {
     this.updateMovementVector();
     this.updateRotationVector();
 
+    if (this.isStopped()) this.disableDispatch();
+
+  }
+
+  isStopped() {
+    return this.#moveVector.x === 0 &&
+      this.#moveVector.y === 0 &&
+      this.#moveVector.z === 0;
+
+    // return this.#moveState.forward === 0 &&
+    //   this.#moveState.back === 0 &&
+    //   this.#moveState.left === 0 &&
+    //   this.#moveState.right === 0 &&
+    //   this.#moveState.up === 0 &&
+    //   this.#moveState.down === 0;
+  }
+
+  disableDispatch() {
+    this.dispatchEvents = false;
+    console.log('keyup')
+    setTimeout(() => {
+      // this.dispatchEvents = false;
+      window.dispatchEvent(updateEvent);
+    }, 20);
   }
 
   pointerdown(event: Event) {
@@ -333,6 +365,8 @@ class MyFlyControls extends EventDispatcher implements Animatable {
 
     if (this.#enableLimits)
       this.#camera.position.clamp(this.#moveLimits.MIN, this.#moveLimits.MAX);
+
+    if (this.dispatchEvents) window.dispatchEvent(updateEvent);
 
 
     // !!! Things below this are not needed for our simplified controls

@@ -33,8 +33,6 @@ export default function QuestionDialogBox({
   let correctAnswer: number;
   let buttonText: string;
 
-  // if (!(questionDialogData.data && questionDialogData.objects && questionDialogData.target)) return <></>;
-
   const cellImgProps = `max-h-[70%] max-w-[70%] aspect-[${building.iconAspectRatio}]`;
   const cellTextProps = "text-xs lg:text-xl text-white ";
   let cellStyle: React.CSSProperties = {};
@@ -212,7 +210,8 @@ export default function QuestionDialogBox({
     if (Number(answer) === correctAnswer) {
       placeBuildingOnCanvas();
     } else {
-      placeBuildingOnCanvas();
+      
+      // placeBuildingOnCanvas();
     }
   }
 
@@ -231,7 +230,7 @@ export default function QuestionDialogBox({
       style={{perspective: "800px"}}>
 
       {/* This is the container with a background */}
-      <motion.div className='relative w-3/4 h-3/4 bg-black/60 rounded-3xl flex flex-col
+      <motion.div className='relative w-[70%] h-[85%] bg-black/60 rounded-3xl flex flex-col
          justify-evenly items-center pointer-events-auto'
         initial={{rotateX: 90}}
         animate={{rotateX: 0}}
@@ -240,7 +239,7 @@ export default function QuestionDialogBox({
         <div className="absolute top-0 right-3 text-red-500 text-5xl font-bold
         cursor-pointer hover:text-red-700 select-none"
         onClick={() => handleCloseQuestionDialog()}>×</div>
-        <h1 className="text-xl text-white text-center whitespace-pre-line m-2">{headlineText}</h1>
+        <h1 className="text-xl font-bold text-white text-center whitespace-pre-line m-2">{headlineText}</h1>
 
 
 

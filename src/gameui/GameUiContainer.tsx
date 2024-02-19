@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import BuildMenu from './BuildMenu';
 import ToolTipMouseOverCanvas from './ToolTipMouseOverCanvas';
 import QuestionDialogBox from './QuestionDialogBox';
@@ -8,8 +8,10 @@ import { FinishSelectionObject, NonNullableFinishSelectionObject } from '../type
 import CanvasInterface from '../systems/CanvasInterface';
 import { useStore } from './Store';
 import TopBar from './TopBar';
-import { MouseEventHandler } from '../systems/MouseEventHandlers';
 import { C } from '../Constants';
+import { calculateTransactionAmount } from '../Utils';
+import ToolTipLayer from './ToolTipLayer';
+import { Vector3 } from 'three';
 
 
 interface GameUiContainerProps {
@@ -19,16 +21,23 @@ interface GameUiContainerProps {
 export default function GameUiContainer({canvasInterface}: GameUiContainerProps) {
 
   const spendMoney = useStore((state) => state.spendMoney);
-  const decrementOnePerson = useStore((state) => state.decrementOnePerson);
-  const incrementPeople = useStore((state) => state.incrementPeople);
+  const incrementOnePerson = useStore((state) => state.incrementOnePerson);
+  const decrementPeople = useStore((state) => state.decrementPeople);
   const money = useStore((state) => state.money);
+
+  // Ui Elements
+  const [showQuestionDialog, setShowQuestionDialog] = useState(false);
+  const [buildMenuEnabled, setBuildMenuEnabled] = useState(true);
+  const [showCoordinateToolTip, setShowCoordinateToolTip] = useState(true);
+  const [showBoardToolTip, setShowBoardToolTip] = useState(false);
+
 
   const [selectedBuilding, setSelectedBuilding] = useState<BuildableType>("noSelection");
   const [questionDialogData, setQuestionDialogData] = 
     useState<NonNullableFinishSelectionObject>(({} as NonNullableFinishSelectionObject));
-  const [showQuestionDialog, setShowQuestionDialog] = useState(false);
-  const [buildMenuEnabled, setBuildMenuEnabled] = useState(true);
-  const [showToolTips, setShowToolTips] = useState(true);
+ 
+  const transactionAmount = useRef(0);
+
 
   const onBuildingSelect = useCallback((buildingType: BuildableType) => {
     setSelectedBuilding(buildingType);
@@ -39,7 +48,7 @@ export default function GameUiContainer({canvasInterface}: GameUiContainerProps)
   const showQuestionDialogOnSelectionFinished = useCallback(() => {
     setShowQuestionDialog(true);
     setBuildMenuEnabled(false);
-    setShowToolTips(false);
+    setShowCoordinateToolTip(false);
     canvasInterface.disableMouseHandler();
     canvasInterface.disableFlyControls();
   }, [canvasInterface]);
@@ -49,19 +58,10 @@ export default function GameUiContainer({canvasInterface}: GameUiContainerProps)
     canvasInterface.enableMouseHandler();
     canvasInterface.enableFlyControls();
     setBuildMenuEnabled(true);
-    setShowToolTips(true);
+    setShowCoordinateToolTip(true);
   }, [setShowQuestionDialog, canvasInterface]);
 
 
-  const purchaseIfSufficientFunds = useCallback((price: number, quantity: number) => {
-
-    const totalPrice = price * quantity;
-    if (totalPrice <= money) {
-      spendMoney(totalPrice);
-      return true;
-    } else return false;
-
-  }, [money, spendMoney]);
 
 
   const placeBuildingOnCanvas = useCallback((result?: NonNullableFinishSelectionObject) => {
@@ -75,27 +75,18 @@ export default function GameUiContainer({canvasInterface}: GameUiContainerProps)
     switch(selectedBuilding) {
 
       case "bulldoze": {
-
-        if (purchaseIfSufficientFunds(Buildables[selectedBuilding].price, 1)) {
-          canvasInterface.bulldozeMountain(objects);
-        }
-
+        canvasInterface.bulldozeMountain(objects);
         break;
       }
 
       case "demolish": {
 
-        if (target.getBuildables().length === 0) return;
-
         const buildingData = target.getBuildables()[0].userData;
         const connectorCount = buildingData.connections.length;
         const connectorCapacity = Buildables[buildingData.keyName].connectorCapacity || 0;
-        console.log(connectorCount, connectorCapacity);
 
-        if (purchaseIfSufficientFunds(buildingData.price, 1)) {
-          canvasInterface.demolishBuildings(objects);
-          incrementPeople(buildingData.capacity + (connectorCount * connectorCapacity));
-        }
+        canvasInterface.demolishBuildings(objects);
+        decrementPeople(buildingData.capacity + (connectorCount * connectorCapacity));
 
         break;
       }
@@ -103,24 +94,21 @@ export default function GameUiContainer({canvasInterface}: GameUiContainerProps)
       // For all buildings
       default: {
 
-        const quantityBought = MouseEventHandler.isTwoPhaseSelector(building.selector) ?
-          objects.length : 1;
-        
-        if (purchaseIfSufficientFunds(building.price, quantityBought)) {
-          canvasInterface.placeBuilding(building, objects, target, decrementOnePerson);
-        }
-        
+        canvasInterface.placeBuilding(building, objects, target, incrementOnePerson);
         break;
       }
     }
+
+    spendMoney(transactionAmount.current);
+
   }, [
     canvasInterface, 
-    handleCloseQuestionDialog, 
-    purchaseIfSufficientFunds, 
+    handleCloseQuestionDialog,
     selectedBuilding,
     questionDialogData,
-    decrementOnePerson,
-    incrementPeople,
+    incrementOnePerson,
+    decrementPeople,
+    spendMoney,
   ]);
 
 
@@ -128,13 +116,37 @@ export default function GameUiContainer({canvasInterface}: GameUiContainerProps)
     // check for any nulls, and if not, turn the result into 
     // a NonNullableFinishSelectionObject so we don't have to check again elsewhere
     if (!(result.data && result.objects && result.target)) return;
-    const nonNullableResult = {target: result.target, objects: result.objects, data: result.data}
 
-    setQuestionDialogData(nonNullableResult);
+    const nonNullableResult = {
+      target: result.target, 
+      objects: result.objects, 
+      data: result.data
+    }
 
-    if (C.showQuestions) showQuestionDialogOnSelectionFinished();
-    else placeBuildingOnCanvas(nonNullableResult);
-  }, [placeBuildingOnCanvas, showQuestionDialogOnSelectionFinished]);
+    transactionAmount.current = 
+      calculateTransactionAmount(Buildables[selectedBuilding], nonNullableResult);
+
+    
+    //temp
+
+    
+    if (money >= transactionAmount.current) {
+
+      // Pass the transaction on if there is sufficient funds
+      setQuestionDialogData(nonNullableResult);
+      if (C.showQuestions) showQuestionDialogOnSelectionFinished();
+      else placeBuildingOnCanvas(nonNullableResult);
+
+    } else {
+
+      // Stop the transaction
+
+      setShowBoardToolTip(true);
+
+    }
+
+
+  }, [placeBuildingOnCanvas, showQuestionDialogOnSelectionFinished, money, selectedBuilding]);
 
 
   useEffect(() => {
@@ -158,18 +170,23 @@ export default function GameUiContainer({canvasInterface}: GameUiContainerProps)
         buildMenuEnabled={buildMenuEnabled}
         selectedBuilding={selectedBuilding} />
 
-      <div className="relative h-full w-full flex flex-col justify-between">
+      {showQuestionDialog && <QuestionDialogBox 
+        selectedBuilding={selectedBuilding} 
+        questionDialogData={questionDialogData}
+        handleCloseQuestionDialog={handleCloseQuestionDialog}
+        placeBuildingOnCanvas={placeBuildingOnCanvas} />}
 
-        {showQuestionDialog && <QuestionDialogBox 
-          selectedBuilding={selectedBuilding} 
-          questionDialogData={questionDialogData}
-          handleCloseQuestionDialog={handleCloseQuestionDialog}
-          placeBuildingOnCanvas={placeBuildingOnCanvas} />}
+      {/* <div className='absolute size-4 bg-red-600'
+        style={{left: `${vector.x}px`, top: `${vector.y}px`}}></div> */}
+
+      <ToolTipLayer canvasInterface={canvasInterface} />
+
+      <div className="relative h-full w-full flex flex-col justify-between">
 
         <TopBar />
 
         <div className='bottombar grow-0 h-12 m-2 flex items-center justify-center'>
-          {showToolTips &&<ToolTipMouseOverCanvas />}
+          {showCoordinateToolTip && <ToolTipMouseOverCanvas />}
         </div>
       </div>
 

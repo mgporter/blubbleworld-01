@@ -11,6 +11,7 @@ export function World({canvasInterface}: {canvasInterface: CanvasInterface}) {
 
     canvasInterface.setState(scene, camera, gl, raycaster);
     canvasInterface.enableFlyControls();
+    canvasInterface.enableMouseHandler();
 
     /* These will occur as soon as the canvas loads up */
     canvasInterface.buildWorld(
@@ -27,6 +28,7 @@ export function World({canvasInterface}: {canvasInterface: CanvasInterface}) {
     return () => {
       canvasInterface.clearWorld();
       canvasInterface.disableFlyControls();
+      canvasInterface.disableMouseHandler();
     }
   }, [canvasInterface, camera, scene, raycaster, gl]);
 

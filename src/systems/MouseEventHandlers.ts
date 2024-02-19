@@ -3,7 +3,7 @@ import { FinishSelectionObject, MeshName, Selector, SinglePhaseSelector, TwoPhas
 import { Selectable } from "../types";
 import { SelectableInstancedMesh } from "../objects/SelectableInstancedMesh";
 import { MouseEventEmitter } from "./EventEmitter";
-import { Camera, Raycaster, Vector2, WebGLRenderer } from "three";
+import { Camera, InstancedMesh, Matrix4, Mesh, MeshStandardMaterial, Raycaster, SphereGeometry, Vector2, Vector3, WebGLRenderer } from "three";
 import { BuildableType } from "../Buildables";
 import { forEachFilter } from "../Utils";
 
@@ -58,8 +58,6 @@ export class MouseEventHandler {
     this.#_onClick = this.#onClick.bind(this);
     this.#_onMouseout = this.#onMouseout.bind(this);
     this.#_onMousemove = this.#onMousemove.bind(this);
-
-    this.enable();
   }
 
   static isInstancedMesh(mesh: SelectableMesh | SelectableInstancedMesh): mesh is SelectableInstancedMesh {
@@ -231,7 +229,7 @@ export class MouseEventHandler {
     } else {
       
       this.#selector.handleMouseOverTarget(mouseoverTarget);
-
+      
       if (mouseoverTarget.isHoverable()) {
         
         if (this._currentTarget) this.#selector.handleMouseLeaveTarget(this._currentTarget);
