@@ -14,6 +14,7 @@ class InstancedMeshSelectionObject {
   #instancedMeshRef: SelectableInstancedMesh;
   #buildables: MyGroup[] = [];
   canPlaceBuildable;
+  readonly isInstancedSelectionObject = true;
 
 
   constructor(

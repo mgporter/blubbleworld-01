@@ -10,13 +10,14 @@ import { useStore } from './Store';
 import TopBar from './TopBar';
 import { C } from '../Constants';
 import { calculateTransactionAmount } from '../Utils';
-import ToolTipLayer from './ToolTipLayer';
-import { Vector3 } from 'three';
+import { BoardToolTipController } from './BoardToolTipController';
 
 
 interface GameUiContainerProps {
   canvasInterface: CanvasInterface;
 }
+
+let tooltipController: BoardToolTipController;
 
 export default function GameUiContainer({canvasInterface}: GameUiContainerProps) {
 
@@ -29,7 +30,6 @@ export default function GameUiContainer({canvasInterface}: GameUiContainerProps)
   const [showQuestionDialog, setShowQuestionDialog] = useState(false);
   const [buildMenuEnabled, setBuildMenuEnabled] = useState(true);
   const [showCoordinateToolTip, setShowCoordinateToolTip] = useState(true);
-  const [showBoardToolTip, setShowBoardToolTip] = useState(false);
 
 
   const [selectedBuilding, setSelectedBuilding] = useState<BuildableType>("noSelection");
@@ -37,7 +37,14 @@ export default function GameUiContainer({canvasInterface}: GameUiContainerProps)
     useState<NonNullableFinishSelectionObject>(({} as NonNullableFinishSelectionObject));
  
   const transactionAmount = useRef(0);
+  const tooltipLayerRef = useRef<HTMLDivElement>(null!);
 
+  useEffect(() => {
+    tooltipController = new BoardToolTipController(tooltipLayerRef.current, canvasInterface);
+    return () => {
+      tooltipController.dispose();
+    }
+  }, [canvasInterface]);
 
   const onBuildingSelect = useCallback((buildingType: BuildableType) => {
     setSelectedBuilding(buildingType);
@@ -126,8 +133,6 @@ export default function GameUiContainer({canvasInterface}: GameUiContainerProps)
     transactionAmount.current = 
       calculateTransactionAmount(Buildables[selectedBuilding], nonNullableResult);
 
-    
-    //temp
 
     
     if (money >= transactionAmount.current) {
@@ -140,8 +145,11 @@ export default function GameUiContainer({canvasInterface}: GameUiContainerProps)
     } else {
 
       // Stop the transaction
-
-      setShowBoardToolTip(true);
+      tooltipController.createTooltip(
+        nonNullableResult.target,
+        "You don't have enough money to purchase this",
+        "red",
+      );
 
     }
 
@@ -162,7 +170,8 @@ export default function GameUiContainer({canvasInterface}: GameUiContainerProps)
 
 
 
-
+  // Z indices of elements: QuestionDialog: 500, BuildMenu: 200, UiElements: 50, ToolTipLayer: 10
+  
   return (
     <div id="gameui-container" className='absolute z-30 w-full h-svh flex pointer-events-none'>
       <BuildMenu 
@@ -176,12 +185,9 @@ export default function GameUiContainer({canvasInterface}: GameUiContainerProps)
         handleCloseQuestionDialog={handleCloseQuestionDialog}
         placeBuildingOnCanvas={placeBuildingOnCanvas} />}
 
-      {/* <div className='absolute size-4 bg-red-600'
-        style={{left: `${vector.x}px`, top: `${vector.y}px`}}></div> */}
+      <div ref={tooltipLayerRef} className='absolute w-full h-full pointer-events-none z-10'></div>
 
-      <ToolTipLayer canvasInterface={canvasInterface} />
-
-      <div className="relative h-full w-full flex flex-col justify-between">
+      <div className="relative h-full w-full flex flex-col justify-between z-[50]">
 
         <TopBar />
 

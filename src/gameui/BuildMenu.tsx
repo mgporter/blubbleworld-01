@@ -47,7 +47,7 @@ export default function BuildMenu({onBuildingSelect, buildMenuEnabled, selectedB
   }
 
   return (
-    <div className="flex w-96 pointer-events-none items-start">
+    <div className="flex w-96 pointer-events-none items-start relative z-[200]">
     <motion.div className={UiProps + "m-2 flex flex-col min-h-28 min-w-24 p-4"}
       animate={{width: menuWidth, height: menuHeight}} transition={{type: "just"}}
       layoutId="buildMenuOpenCloseAction"

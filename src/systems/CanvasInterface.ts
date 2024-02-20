@@ -1,7 +1,7 @@
 import { Camera, InstancedMesh, Matrix4, Mesh, MeshStandardMaterial, Raycaster, Scene, SphereGeometry, Vector3, WebGLRenderer } from "three";
 import { Lights } from "../objects/Lights";
 import { Board } from "./Board";
-import { Selectable, Selector, Animatable, BoardToolTip } from "../types";
+import { Selectable, Selector, Animatable } from "../types";
 import { MyFlyControls } from "./MyFlyControls";
 import { BaseSelector, ConnectingSelector, MouseEventHandler } from "./MouseEventHandlers";
 import { SelectableMesh } from "../objects/SelectableMesh";
@@ -13,7 +13,7 @@ import { ModelInterface, MyGroup } from "./ModelInterface";
 import { Blubble } from "../objects/Blubble";
 import { C } from "../Constants";
 import { OrbitControls } from "three/examples/jsm/Addons.js";
-import { BoardToolTipController } from "../gameui/BoardToolTipController";
+import { InstancedMeshSelectionObject } from "../objects/InstancedMeshSelectionObject";
 
 
 export default class CanvasInterface {
@@ -36,6 +36,10 @@ export default class CanvasInterface {
   // Collections
   #selectables: (SelectableMesh | SelectableInstancedMesh)[]
   #animatables: Animatable[];
+
+  #localMatrix = new Matrix4();
+  #worldMatrix = new Matrix4();
+  #projectionVector = new Vector3();
 
   constructor() {
     this.#scene = new MyScene();
@@ -116,37 +120,37 @@ export default class CanvasInterface {
 
   getMouseCoordinatesOfSelectable(target: Selectable) {
 
-    // const testMesh = new Mesh(
-    //   new SphereGeometry(0.08),
-    //   new MeshStandardMaterial(),
-    // );
+    // Get world matrix of target
+    if ((target as InstancedMeshSelectionObject).isInstancedSelectionObject) {
 
+      (target as InstancedMeshSelectionObject).getMesh().getMatrixAt(target.getIndex(), this.#localMatrix);
+      this.#worldMatrix.multiplyMatrices(target.getMesh().matrixWorld, this.#localMatrix);
 
-    // this.#scene.add(testMesh);
+    } else {
 
+      this.#worldMatrix = target.getMesh().matrixWorld;
 
-    const localMatrix = new Matrix4();
-    (target.getMesh() as InstancedMesh).getMatrixAt(target.getIndex(), localMatrix);
-    
-    const worldMatrix = new Matrix4().multiplyMatrices(target.getMesh().matrixWorld, localMatrix);
-    const vec = new Vector3().setFromMatrixPosition(worldMatrix);
+    }
 
-    // testMesh.position.set(vec.x - 0.44, vec.y + 1.08, vec.z-0.44);
-    vec.x += -0.38;
-    vec.y += 1.1; 
-    vec.z += -0.50; 
+    // Get position from world matrix and set offsets so that the 
+    // vector point refers to the center of the top surface of the cell 
+    this.#projectionVector.setFromMatrixPosition(this.#worldMatrix);
+    this.#projectionVector.set(
+      this.#projectionVector.x - 0.38,
+      this.#projectionVector.y + this.#worldMatrix.toArray()[9] + 0.1,  // factor in the height of the cell when calculating height
+      this.#projectionVector.z - 0.5,
+    );
 
-    vec.project(this.#camera);
+    this.#projectionVector.project(this.#camera);
 
-    const newVec = new Vector3();
+    // Denormalize the value to mouse coordinates scaled to the canvas size
+    this.#projectionVector.set(
+      (0.5 + this.#projectionVector.x / 2) * window.innerWidth,
+      (0.5 - this.#projectionVector.y / 2) * window.innerHeight,
+      0,
+    );
 
-    // newVec.x = Math.round(((vec.x - 1) / -2) * window.innerWidth );
-    // newVec.y = Math.round(((vec.y + 1) / 2) * window.innerWidth );
-
-    newVec.x = Math.round((0.5 + vec.x / 2) * (window.innerWidth));
-    newVec.y = Math.round((0.5 - vec.y / 2) * (window.innerHeight));
-
-    return newVec;
+    return this.#projectionVector;
   }
 
   /** Pass in a selector, or "null" to disable */

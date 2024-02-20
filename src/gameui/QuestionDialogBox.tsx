@@ -226,7 +226,7 @@ export default function QuestionDialogBox({
 
 
   return (
-    <div className='absolute w-full h-full flex justify-center items-center'
+    <div className='absolute w-full h-full flex justify-center items-center z-[500]'
       style={{perspective: "800px"}}>
 
       {/* This is the container with a background */}

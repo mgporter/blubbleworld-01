@@ -18,7 +18,7 @@ const C = {
 
   showQuestions: false,               // Show the math questions when a building is placed
   populationGoal: 120,              // The population goal to reach for this round
-  startingMoney: 10000,
+  startingMoney: 100,
 }
 
 export { C };

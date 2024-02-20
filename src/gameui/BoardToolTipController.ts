@@ -1,33 +1,46 @@
 import { Vector3 } from "three";
 import CanvasInterface from "../systems/CanvasInterface";
-import { BoardToolTip, Selectable } from "../types";
-import { clamp } from "three/src/math/MathUtils.js";
+import { Selectable, TooltipProps } from "../types";
+import { Tooltip } from "./ToolTip";
+
+const greenTooltip: TooltipProps = {
+  message: "",
+  textColor: "rgb(255, 255, 255)",
+  bgColor: "rgba(5, 46, 22, 0.6)",
+  borderColor: "rgb(21, 128, 61)",
+  duration: 2,
+  pulse: true,
+}
+
+const redTooltip: TooltipProps = {
+  message: "",
+  textColor: "rgb(255, 255, 255)",
+  bgColor: "rgba(84, 27, 11, 0.6)",
+  borderColor: "rgb(194, 65, 12)",
+  duration: 2,
+  pulse: true,
+}
+
+type ToolTipColors = "red" | "green";
 
 
 class BoardToolTipController {
   
+  static PADDING = 50;
+  static TOOLTIPOFFSETHEIGHT = 150;
+
   #container;
-  #canvas;
-  #rect;
-  #contex;
   #canvasInterface;
-  #target: Selectable | null;
-  #position;
-  #tooltipDiv;
+  #activeTooltips: Tooltip[];
 
   #_resizeCanvas;
   #_draw;
 
 
-  constructor(toolTipContainer: HTMLCanvasElement, container: HTMLDivElement, canvasInterface: CanvasInterface) {
+  constructor(container: HTMLDivElement, canvasInterface: CanvasInterface) {
     this.#container = container;
-    this.#canvas = toolTipContainer;
-    this.#contex = this.#canvas.getContext('2d')!;  // Need to handle condition where there is no 2d context
-    this.#rect = this.#canvas.getBoundingClientRect();
-    this.#canvasInterface =canvasInterface;
-    this.#target = null;
-    this.#position = new Vector3();
-    this.#tooltipDiv = document.createElement('div');
+    this.#canvasInterface = canvasInterface;
+    this.#activeTooltips = [];
 
     this.#_resizeCanvas = this.#resizeCanvas.bind(this);
     this.#_draw = this.#draw.bind(this);
@@ -38,74 +51,73 @@ class BoardToolTipController {
     this.#resizeCanvas();
   }
 
-  createTooltip(target: Selectable) {
-    this.#target = target;
+  createTooltip(
+    target: Selectable, 
+    message: string, 
+    color: ToolTipColors, 
+    duration: number = 2, 
+    pulse: boolean = true,
+  ) {
 
-    this.#tooltipDiv.className = "absolute py-1 px-4 h-8 bg-black/60 rounded-3xl flex flex-col " + 
-      "justify-evenly items-center text-white " +
-      "border-2 border-orange-700 shadow-xl";
-    
-      this.#tooltipDiv.textContent = "This is a message!"
+    let props: TooltipProps;
 
-    this.#container.appendChild(this.#tooltipDiv);
+    switch (color) {
+      case "green": props = greenTooltip; break;
+      case "red": props = redTooltip; break;
+    }
 
+    props.message = message;
+    props.duration = duration;
+    props.pulse = pulse;
 
+    const tooltip = new Tooltip(target, props);
+
+    this.#container.appendChild(tooltip.getDomElement());
+    this.#activeTooltips.push(tooltip);
+
+    if (props.duration && props.duration > 0) {
+      setTimeout(() => {
+        this.removeTooltip(tooltip);
+      }, props.duration * 1000);
+    }
+
+    this.#updateTooltipValues();
     this.#draw();
 
+    return tooltip;
+
+  }
+
+  #updateTooltipValues() {
+    this.#activeTooltips.forEach(x => x.updateValues());
+  }
+
+  removeTooltip(tooltip: Tooltip) {
+    tooltip.remove(() => {
+      const index = this.#activeTooltips.indexOf(tooltip);
+      if (index != -1) {
+        this.#activeTooltips.splice(index, 1);
+      }
+    });
+  }
+
+  removeAllToolTips() {
+    this.#activeTooltips.forEach(x => this.removeTooltip(x));
   }
 
   #draw() {
-    if (!this.#target) return;
 
-    this.#position = this.#canvasInterface.getMouseCoordinatesOfSelectable(this.#target);
-
-    const tooltipRect = this.#tooltipDiv.getBoundingClientRect();
-    const tooltipHalfWidth = tooltipRect.width / 2;
-    const tooltipX = clamp(this.#position.x - tooltipHalfWidth, 50, this.#rect.right - 50 - tooltipRect.width);
-    const tooltipY = clamp(this.#position.y - 150, 50, this.#rect.bottom - 50 - tooltipRect.height);
-    const tooltipAboveTarget = tooltipY < this.#position.y;
-
-    this.#tooltipDiv.style.left = tooltipX + "px";
-    this.#tooltipDiv.style.top = tooltipY + "px";
-
-
-    this.#contex.clearRect(0, 0, this.#rect.width, this.#rect.height);
-    console.log("DRAW")
-    // Set line styles
-
-
-    // Begin the path
-    this.#contex.beginPath();
-    this.#contex.strokeStyle = 'rgb(194, 65, 12)';
-    this.#contex.lineWidth = 2;
-    this.#contex.lineCap = 'round';
-    this.#contex.moveTo(
-      tooltipX + tooltipHalfWidth, 
-      tooltipAboveTarget ? tooltipY + tooltipRect.height : tooltipY);
-    this.#contex.lineTo(this.#position.x, this.#position.y);
-    this.#contex.stroke();
-
-    this.#contex.beginPath();
-    this.#contex.arc(this.#position.x, this.#position.y, 4, 0, 2 * Math.PI, false);
-    this.#contex.fillStyle = 'rgb(194, 65, 12)';
-    this.#contex.fill();
-    // this.#contex.lineWidth = 1;
-    // this.#contex.strokeStyle = 'rgb(120, 35, 6)';
-    // this.#contex.stroke();
-
+    for (const tooltip of this.#activeTooltips) {
+      tooltip.draw(
+        this.#canvasInterface.getMouseCoordinatesOfSelectable(tooltip.getTarget()),
+      );
+    }    
 
   }
 
 
-
   #resizeCanvas() {
-    this.#rect = this.#canvas.getBoundingClientRect();
-    const ratio = window.devicePixelRatio;
-
-    this.#canvas.width = this.#rect.width * ratio;
-    this.#canvas.height = this.#rect.height * ratio;
-    this.#contex.scale(ratio, ratio);
-
+    this.#updateTooltipValues();
     this.#draw();
   }
 

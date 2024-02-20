@@ -60,3 +60,38 @@ button {
 .btn-emerald:active {
   @apply bg-emerald-700;
 }
+
+
+
+
+.tooltip-ping {
+  animation: ping 2s cubic-bezier(0, 0, 0.2, 1) infinite;
+}
+
+@keyframes ping {
+  85%, 100% {
+    transform: scale(1.2, 1.8);
+    opacity: 0;
+  }
+}
+
+
+.fadeout-2s {
+  animation: 2s ease-out 0s 1 normal forwards fadeout;
+}
+
+@keyframes fadeout {
+  100% {
+    opacity: 0;
+  }
+}
+
+.fadeout-1s {
+  animation: fadeout 1s linear 1;
+}
+
+@keyframes fadeout {
+  100% {
+    opacity: 0;
+  }
+}

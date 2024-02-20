@@ -103,9 +103,11 @@ export interface Animatable {
   update: (delta: number) => void;
 }
 
-export interface BoardToolTip {
+export interface TooltipProps {
   message: string;
-  textColor: string;
-  bgColor: string;
-  duration: number;
+  textColor?: string;
+  bgColor?: string;
+  borderColor?: string;
+  duration?: number;
+  pulse?: boolean,
 }
