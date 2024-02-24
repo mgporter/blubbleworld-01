@@ -242,7 +242,6 @@ class MyFlyControls extends EventDispatcher implements Animatable {
 
   disableDispatch() {
     this.dispatchEvents = false;
-    console.log('keyup')
     setTimeout(() => {
       // this.dispatchEvents = false;
       window.dispatchEvent(updateEvent);

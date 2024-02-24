@@ -25,6 +25,9 @@ export default class CanvasInterface {
   #raycaster: Raycaster;
   #renderer!: WebGLRenderer;
 
+  // world attributes
+  #worldSeed: number;
+
   // Control objects
   #board: Board | null;
   #flyControls!: MyFlyControls | null;
@@ -45,6 +48,7 @@ export default class CanvasInterface {
     this.#scene = new MyScene();
     this.#camera = new MyPerspectiveCamera(35, 1, 0.1, 100);
     this.#raycaster = new Raycaster();
+    this.#worldSeed = 0;
 
     this.#flyControls = null;
     this.#board = null;
@@ -159,15 +163,33 @@ export default class CanvasInterface {
     else this.#mouseEvents!.setSelector(new BaseSelector());
   }
 
-  buildWorld(sizeX: number, sizeY: number, pondPercent: number, mountainPercent: number, seed: number | null) {
+  createWorld(sizeX: number, sizeY: number, pondPercent: number, mountainPercent: number, seed: number | null) {
+
+    C.worldsizeX = sizeX;
+    C.worldsizeY = sizeY;
+    C.pondPercent = pondPercent;
+    C.mountainPercent = mountainPercent;
+    this.#worldSeed = seed != null ? seed : Math.random();
+
+    this.clearWorld();
+
     const directionalLight = Lights.createDirectionalLight();
     const ambientLight = Lights.createAmbientLight();
     this.#scene.add(directionalLight, ambientLight);
-    this.#board = new Board(sizeX, sizeY, pondPercent, mountainPercent, seed);
+    this.#board = new Board(sizeX, sizeY, pondPercent, mountainPercent, this.#worldSeed);
     this.#board.addBoardToScene(this.#scene);
     this.#selectables = this.#board.getSelectables();
 
     this.#mouseEvents?.setObjects(this.#selectables);
+  }
+
+  rebuildExistingWorld(pondPercent: number, mountainPercent: number) {
+    // const buildings = this.#board?.getBuildingsOnBoard();
+
+    C.pondPercent = pondPercent;
+    C.mountainPercent = mountainPercent;
+    
+    this.createWorld(C.worldsizeX, C.worldsizeY, C.pondPercent, C.mountainPercent, this.#worldSeed);
   }
 
   placeBuilding(building: Buildable, objects: Selectable[], target: Selectable, callback: () => void) {
@@ -318,6 +340,8 @@ export default class CanvasInterface {
 
   moveBlubblesToCell(target: Selectable, count: number = 1, callback: () => void) {
     
+    if (!C.showBlubbles) return;
+
     let current = 0;
 
     const interval = setInterval(() => {

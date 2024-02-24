@@ -63,6 +63,11 @@ export type NonNullableFinishSelectionObject = {
 
 
 
+
+
+
+
+
 export interface Selector {
   updateObjects: (selectablesToUpdate: Selectable[]) => void;
   handleMouseOverTarget: (target: Selectable) => void;
@@ -73,6 +78,63 @@ export interface Selector {
   init: () => void;
   isSelectionValid: boolean;
 }
+
+
+export class CatSelector implements Selector {
+
+  handleMouseOverTarget(target: Selectable) {
+    console.log("CATS!!");
+  }
+
+  updateObjects(selectablesToUpdate: Selectable[]) {}
+  handleMouseLeaveTarget(target: Selectable) {}
+  handleMouseLeaveBoard(target: Selectable) {}
+  handleSelectionFinished(target: Selectable) {return {target: null, objects: null};}
+  allowStacking() {return false;}
+  init() {}
+  isSelectionValid = true;
+
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 export interface SinglePhaseSelector extends Selector {

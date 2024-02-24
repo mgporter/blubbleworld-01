@@ -47,8 +47,14 @@ class NoiseMaker {
     let cumulativeValue = 0;
     for (const val of values) {
       if ((cumulativeValue = cumulativeValue + val) < sortedArray.length)
-        // outputArray.push(sortedArray[cumulativeValue] + 0.00000000000001);
         outputArray.push(sortedArray[cumulativeValue]);
+
+      // If a value is exactly equal to the number of elements in the array,
+      // then push the highest value + 1 into the outputArray.
+      // This avoids an undefined breakpoint in this situation.
+      else if (cumulativeValue === sortedArray.length) {
+        outputArray.push(sortedArray[sortedArray.length - 1] + 1);
+      }
     }
     
     return outputArray;

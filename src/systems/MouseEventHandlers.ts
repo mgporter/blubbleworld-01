@@ -3,7 +3,7 @@ import { FinishSelectionObject, MeshName, Selector, SinglePhaseSelector, TwoPhas
 import { Selectable } from "../types";
 import { SelectableInstancedMesh } from "../objects/SelectableInstancedMesh";
 import { MouseEventEmitter } from "./EventEmitter";
-import { Camera, InstancedMesh, Matrix4, Mesh, MeshStandardMaterial, Raycaster, SphereGeometry, Vector2, Vector3, WebGLRenderer } from "three";
+import { Camera, Raycaster, Vector2, WebGLRenderer } from "three";
 import { BuildableType } from "../Buildables";
 import { forEachFilter } from "../Utils";
 

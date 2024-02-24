@@ -14,7 +14,7 @@ export function World({canvasInterface}: {canvasInterface: CanvasInterface}) {
     canvasInterface.enableMouseHandler();
 
     /* These will occur as soon as the canvas loads up */
-    canvasInterface.buildWorld(
+    canvasInterface.createWorld(
       C.worldsizeX, 
       C.worldsizeY, 
       C.pondPercent, 

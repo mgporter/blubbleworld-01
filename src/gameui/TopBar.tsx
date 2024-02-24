@@ -1,9 +1,15 @@
 import { C } from "../Constants";
+import OptionsMenu from "./OptionsMenu";
 import { useStore } from "./Store"
+
+interface TopBarProps {
+  children: React.ReactNode;
+}
 
 const UiProps = "bg-slate-800/50 pointer-events-auto rounded-2xl ";
 
-export default function TopBar() {
+
+export default function TopBar({children}: TopBarProps) {
 
   const people = useStore((state) => state.people);
   const money = useStore((state) => state.money);
@@ -22,7 +28,7 @@ export default function TopBar() {
         (lowMoney ? "text-orange-400 " : "") + (outOfMoney ? "text-red-500 " : "")}>
         <p>Money: {money}</p>
       </div>
-      <div className={UiProps + "select-none rounded-3xl flex items-center py-2 px-4"}><p>Options</p></div>
+      {children}
     </div>
   )
 }

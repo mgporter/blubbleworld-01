@@ -59,8 +59,8 @@ class SelectableInstancedMesh extends InstancedMesh {
       this.setColorAt(i, initialColor || this.defaultColor);
     }
 
-    // @ts-expect-error instanceColor is not null
-    this.instanceColor.needsUpdate = true;
+    if (this.instanceColor)
+      this.instanceColor.needsUpdate = true;
     
   }
 

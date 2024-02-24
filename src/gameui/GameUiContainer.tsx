@@ -11,6 +11,7 @@ import TopBar from './TopBar';
 import { C } from '../Constants';
 import { calculateTransactionAmount } from '../Utils';
 import { BoardToolTipController } from './BoardToolTipController';
+import OptionsMenu from './OptionsMenu';
 
 
 interface GameUiContainerProps {
@@ -31,7 +32,6 @@ export default function GameUiContainer({canvasInterface}: GameUiContainerProps)
   const [buildMenuEnabled, setBuildMenuEnabled] = useState(true);
   const [showCoordinateToolTip, setShowCoordinateToolTip] = useState(true);
 
-
   const [selectedBuilding, setSelectedBuilding] = useState<BuildableType>("noSelection");
   const [questionDialogData, setQuestionDialogData] = 
     useState<NonNullableFinishSelectionObject>(({} as NonNullableFinishSelectionObject));
@@ -39,12 +39,16 @@ export default function GameUiContainer({canvasInterface}: GameUiContainerProps)
   const transactionAmount = useRef(0);
   const tooltipLayerRef = useRef<HTMLDivElement>(null!);
 
+
+  
   useEffect(() => {
     tooltipController = new BoardToolTipController(tooltipLayerRef.current, canvasInterface);
     return () => {
       tooltipController.dispose();
     }
   }, [canvasInterface]);
+
+
 
   const onBuildingSelect = useCallback((buildingType: BuildableType) => {
     setSelectedBuilding(buildingType);
@@ -189,7 +193,9 @@ export default function GameUiContainer({canvasInterface}: GameUiContainerProps)
 
       <div className="relative h-full w-full flex flex-col justify-between z-[50]">
 
-        <TopBar />
+        <TopBar>
+          <OptionsMenu canvasInterface={canvasInterface} />
+        </TopBar>
 
         <div className='bottombar grow-0 h-12 m-2 flex items-center justify-center'>
           {showCoordinateToolTip && <ToolTipMouseOverCanvas />}

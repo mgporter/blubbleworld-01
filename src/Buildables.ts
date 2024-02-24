@@ -82,7 +82,6 @@ export const Buildables: BuildableList = {
       meshesToSelect: {canPlaceBuildable: true, isOccupied: false},
       meshesToHover: {canPlaceBuildable: true},
     }),
-    // selector: new MyAwesomeSelector(),
     mesh: {
       fileName: tentGLB,
       initialPosition: new Vector3(0.45, 0.45, 1.09),

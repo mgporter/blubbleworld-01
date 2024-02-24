@@ -7,6 +7,9 @@ import { InstancedFoundationCube } from "../objects/InstancedFoundationCube";
 import { InstancedMountainCube } from "../objects/InstancedMountainCube";
 
 import { C } from "../Constants";
+import { Buildable } from "../Buildables";
+import { MouseEventHandler } from "./MouseEventHandlers";
+import { MyGroup } from "./ModelInterface";
 
 type TerrainCounts = {
   TOTAL: number,
@@ -22,10 +25,10 @@ class Board {
   #selectables: SelectableInstancedMesh[];
   #cubeCounts: TerrainCounts;
 
-  constructor(worldsizeX: number, worldsizeY: number, pondPercent: number, mountainPercent: number, seed: number | null) {
+  constructor(worldsizeX: number, worldsizeY: number, pondPercent: number, mountainPercent: number, seed: number) {
 
     this.#noiseMaker = new NoiseMaker(worldsizeX, worldsizeY);
-    if (seed) this.#noiseMaker.setSeed(seed);
+    this.#noiseMaker.setSeed(seed);
     this.#perlinGrid = this.#noiseMaker.generatePerlinGrid();
     this.#selectables = [];
 
@@ -114,6 +117,22 @@ class Board {
     this.#selectables.push(instancedPondCube);
     this.#selectables.push(instancedMountainCube);
     
+  }
+
+  getBuildingsOnBoard() {
+    const buildings: {x: number, y: number, buildables: MyGroup[]}[] = [];
+
+    MouseEventHandler.selectablesFlatMap(this.#selectables)
+      .filter(x => x.isOccupied())
+      .forEach(x => {
+        buildings.push({
+          x: x.getCoordinates().x,
+          y: x.getCoordinates().y,
+          buildables: x.getBuildables(),
+        });
+      })
+
+    return buildings;
   }
 
   getSelectables() {
