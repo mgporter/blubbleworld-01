@@ -102,6 +102,20 @@ export default function GameUiContainer({canvasInterface}: GameUiContainerProps)
         break;
       }
 
+      case "marker": {
+
+        let message = prompt("what message?");
+
+        if (message == null) return;
+
+        if (message.length > C.maxMarkerCharacters) {
+          message = message.substring(0, C.maxMarkerCharacters) + "..."
+        }
+          
+        tooltipController.createTooltip(target, message, "green", -1, true);
+        break;
+      }
+
       // For all buildings
       default: {
 
@@ -141,9 +155,9 @@ export default function GameUiContainer({canvasInterface}: GameUiContainerProps)
     
     if (money >= transactionAmount.current) {
 
-      // Pass the transaction on if there is sufficient funds
+      // Pass the transaction on if there are sufficient funds
       setQuestionDialogData(nonNullableResult);
-      if (C.showQuestions) showQuestionDialogOnSelectionFinished();
+      if (C.showQuestions && selectedBuilding !== "marker") showQuestionDialogOnSelectionFinished();
       else placeBuildingOnCanvas(nonNullableResult);
 
     } else {
@@ -189,7 +203,7 @@ export default function GameUiContainer({canvasInterface}: GameUiContainerProps)
         handleCloseQuestionDialog={handleCloseQuestionDialog}
         placeBuildingOnCanvas={placeBuildingOnCanvas} />}
 
-      <div ref={tooltipLayerRef} className='absolute w-full h-full pointer-events-none z-10'></div>
+      <div ref={tooltipLayerRef} className='absolute w-full h-full z-10'></div>
 
       <div className="relative h-full w-full flex flex-col justify-between z-[50]">
 

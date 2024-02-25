@@ -78,7 +78,10 @@ class Board {
 
         if (perlinValue < pondBreakpoint && pondCubeCount < this.#cubeCounts.POND) {
           // Create pond instance
-          instancedPondCube.setMatrixAt(pondCubeCount, matrix);
+          const matrixCopy = matrix.clone();
+          matrixCopy.scale(new Vector3(1, 1, InstancedPondCube.DEPTHSCALE));
+
+          instancedPondCube.setMatrixAt(pondCubeCount, matrixCopy);
           instancedPondCube.setCoordinates(pondCubeCount, new Vector3(-i, -j, 0));
           pondCubeCount++;
         } 
@@ -93,7 +96,7 @@ class Board {
           const matrixCopy = matrix.clone();
           
           const ratio = (perlinValue - grassBreakpoint) / (this.#noiseMaker.getMax() - grassBreakpoint);
-          const scaleFactor = Math.max((ratio * C.mountainHeightMultiplier) + 1.1, 1.2);
+          const scaleFactor = Math.max((ratio * C.mountainHeightMultiplier) + 1.1, InstancedMountainCube.DEPTHSCALE);
 
           matrixCopy.scale(new Vector3(1, 1, scaleFactor));
           instancedMountainCube.setMatrixAt(mountainCubeCount, matrixCopy);

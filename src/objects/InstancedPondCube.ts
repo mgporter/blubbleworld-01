@@ -3,6 +3,8 @@ import { InstancedGridCube } from "./InstancedGridCube";
 
 class InstancedPondCube extends InstancedGridCube {
 
+  static DEPTHSCALE = 0.8;
+
   constructor(count: number, length?: number, width?: number, depth?: number) {
 
     const options = {
@@ -14,7 +16,7 @@ class InstancedPondCube extends InstancedGridCube {
       selectable: false,
     }
 
-    super(length || 1, width || 1, depth || 0.8, count, options);
+    super(length || 1, width || 1, depth || 1, count, options);
 
     this.name = "InstancedPondCube";
     this.displayName = "water";

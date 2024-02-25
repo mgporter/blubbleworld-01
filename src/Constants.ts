@@ -20,6 +20,7 @@ const C = {
   showBlubbles: true,
   populationGoal: 500,              // The population goal to reach for this round
   startingMoney: 10000,
+  maxMarkerCharacters: 60,
 }
 
 export { C };

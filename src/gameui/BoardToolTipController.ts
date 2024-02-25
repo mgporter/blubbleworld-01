@@ -1,7 +1,7 @@
 import { Vector3 } from "three";
 import CanvasInterface from "../systems/CanvasInterface";
-import { Selectable, TooltipProps } from "../types";
-import { Tooltip } from "./ToolTip";
+import { Selectable } from "../types";
+import { Tooltip, TooltipProps } from "./ToolTip";
 
 const greenTooltip: TooltipProps = {
   message: "",
@@ -10,6 +10,7 @@ const greenTooltip: TooltipProps = {
   borderColor: "rgb(21, 128, 61)",
   duration: 2,
   pulse: true,
+  enableClose: true,
 }
 
 const redTooltip: TooltipProps = {
@@ -19,6 +20,7 @@ const redTooltip: TooltipProps = {
   borderColor: "rgb(194, 65, 12)",
   duration: 2,
   pulse: true,
+  enableClose: true,
 }
 
 type ToolTipColors = "red" | "green";
@@ -81,6 +83,12 @@ class BoardToolTipController {
       }, props.duration * 1000);
     }
 
+    if (props.enableClose) {
+      tooltip.getDomElement().addEventListener('click', () => {
+        this.removeTooltip(tooltip, true);
+      }, {once: true});
+    }
+
     this.#updateTooltipValues();
     this.#draw();
 
@@ -92,13 +100,13 @@ class BoardToolTipController {
     this.#activeTooltips.forEach(x => x.updateValues());
   }
 
-  removeTooltip(tooltip: Tooltip) {
+  removeTooltip(tooltip: Tooltip, removeInstantly = false) {
     tooltip.remove(() => {
       const index = this.#activeTooltips.indexOf(tooltip);
       if (index != -1) {
         this.#activeTooltips.splice(index, 1);
       }
-    });
+    }, removeInstantly);
   }
 
   removeAllToolTips() {

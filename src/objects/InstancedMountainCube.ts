@@ -3,6 +3,8 @@ import { InstancedGridCube } from "./InstancedGridCube";
 
 class InstancedMountainCube extends InstancedGridCube {
 
+  static DEPTHSCALE = 1.2;
+
   constructor(count: number, length?: number, width?: number, depth?: number, ) {
 
     const options = {

@@ -22,12 +22,13 @@ export default function BuildMenu({onBuildingSelect, buildMenuEnabled, selectedB
     Buildables.tent,
     Buildables.house,
     Buildables.hotel,
-    Buildables.skyscraper
+    Buildables.skyscraper,
   ];
 
   const otherOptions = [
     Buildables.demolish,
     Buildables.bulldoze,
+    Buildables.marker,
   ];
 
   if (showMenu) {

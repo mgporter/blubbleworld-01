@@ -1,12 +1,23 @@
 import { clamp } from "three/src/math/MathUtils.js";
-import { Selectable, TooltipProps } from "../types";
+import { Selectable } from "../types";
 import { BoardToolTipController } from "./BoardToolTipController";
 import { Vector3 } from "three";
+
+export interface TooltipProps {
+  message: string;
+  textColor?: string;
+  bgColor?: string;
+  borderColor?: string;
+  duration?: number;
+  pulse?: boolean;
+  enableClose?: boolean;
+}
 
 interface TooltipElements {
   container: HTMLDivElement;
   canvas: HTMLCanvasElement;
   tooltipDiv: HTMLDivElement;
+  closeDiv: HTMLDivElement | null;
   pulseDiv: HTMLDivElement | null;
 }
 
@@ -40,20 +51,22 @@ class Tooltip {
       container: document.createElement('div'),
       canvas: document.createElement('canvas'),
       tooltipDiv: document.createElement('div'),
+      closeDiv: null,
       pulseDiv: null,
     }
 
-    const fullscreenProps = "absolute w-full h-full pointer-events-none z-10";
+    const fullscreenProps = "absolute w-full h-full z-10";
 
     this.#domElements.container.className = fullscreenProps;
     this.#domElements.canvas.className = fullscreenProps;
     this.#domElements.tooltipDiv.className = 
-      "absolute py-1 px-4 h-8 rounded-3xl flex flex-col justify-evenly items-center border-2";
+      "absolute select-none py-1 px-3 h-8 rounded-3xl flex justify-between gap-3 items-center border-2";
 
     const textColor = props.textColor || "rgb(255,255,255)";
     const bgColor = props.bgColor || "rgba(84,27,11,0.6)";
     this.borderColor = props.borderColor || "rgb(194,65,12)";
     const pulse = props.pulse != undefined ? props.pulse : "true"; 
+    const enableClose = props.enableClose != undefined ? props.enableClose : "true"; 
 
     this.#domElements.tooltipDiv.style.color = textColor;
     this.#domElements.tooltipDiv.style.backgroundColor = bgColor;
@@ -79,6 +92,20 @@ class Tooltip {
       this.#domElements.pulseDiv.style.borderColor = this.borderColor;
 
       this.#domElements.tooltipDiv.appendChild(this.#domElements.pulseDiv);
+    }
+
+    if (enableClose) {
+      this.#domElements.closeDiv = document.createElement('div');
+      this.#domElements.closeDiv.className = 
+        "relative pointer-events-auto cursor-pointer leading-[0px] rounded-xl size-4 " +
+        "flex items-center justify-center bg-black/20 hover:bg-red-700/60 " +
+        "border-[1px] border-red-700 active:bg-red-700/80";
+      const p = document.createElement('p');
+      p.className = "absolute left-[1px] top-[5px] text-gray-200"
+      p.textContent = "×";
+      this.#domElements.closeDiv.appendChild(p);
+
+      this.#domElements.tooltipDiv.appendChild(this.#domElements.closeDiv);
     }
 
   }
@@ -138,13 +165,15 @@ class Tooltip {
 
   }
 
-  remove(callbackAfterExit: () => void) {
+  remove(callbackAfterExit: () => void, removeInstantly = false) {
     this.#domElements.container.classList.add('fadeout-2s');
+
+    const timeout = removeInstantly ? 0 : 2500;
 
     setTimeout(() => {
       this.#domElements.container.remove();
       callbackAfterExit();
-    }, 2500);
+    }, timeout);
   }
 
 }

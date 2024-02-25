@@ -9,6 +9,7 @@ import skyscraperIcon from './images/Building-skyscraper_icon_256.png';
 import bulldozerIcon from './images/Bulldozer_icon_256.png';
 import demolishIcon from './images/Demolish_icon_256.png';
 import buildMenuIcon from './images/Build-menu-icon_256.png';
+import markerIcon from './images/Marker_icon_256.png';
 
 import skyscraperGLB from './models/skyscraper.glb';
 import houseGLB from './models/house.glb';
@@ -57,7 +58,7 @@ export type Buildable = {
   connectorCapacity?: number,
 }
 
-export type BuildableType = "house" | "hotel" | "tent" | "skyscraper" | "bulldoze" | "demolish" | "noSelection";
+export type BuildableType = "house" | "hotel" | "tent" | "skyscraper" | "bulldoze" | "demolish" | "marker" | "noSelection";
 export type BlubbleType = "blubbleBlue" | "blubblePurple" | "blubbleRed";
 export const BlubbleTypeArray = ["blubbleBlue", "blubblePurple", "blubbleRed"];
 
@@ -213,6 +214,24 @@ export const Buildables: BuildableList = {
       width: 1, 
       meshesToSelect: {name: "InstancedMountainCube", canPlaceBuildable: false, isOccupied: false},
       meshesToHover: {canPlaceBuildable: true},
+    }),
+  },
+
+  marker: {
+    displayName: "marker",
+    keyName: "marker",
+    plural: "markers",
+    price: 10,
+    icon: markerIcon,
+    iconAspectRatio: 0.81640625,
+    capacity: 0,
+    maxHeight: 1,
+    description: "Place a marker on a cell to give yourself a reminder.",
+    selector: new FixedRectangleSelector({
+      buildableMaxHeight: Number.MAX_SAFE_INTEGER, 
+      length: 1, 
+      width: 1, 
+      meshesToSelect: {},
     }),
   },
 
