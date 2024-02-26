@@ -5,7 +5,7 @@ import { FinishSelectionObject } from "../types";
 // eslint-disable-next-line
 type EventMap = Record<string, any>;
 
-type MouseEventList = "hover" | "selectionStart" | "selectionFinished" | "cameraChange";
+type MouseEventList = "hover" | "selectionStart" | "selectionFinished";
 type MouseEventMap = Record<MouseEventList, FinishSelectionObject>;
 
 // type EventKey<T extends MouseEventMap> = keyof T;

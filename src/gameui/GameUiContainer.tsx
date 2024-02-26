@@ -10,7 +10,7 @@ import { useStore } from './Store';
 import TopBar from './TopBar';
 import { C } from '../Constants';
 import { calculateTransactionAmount } from '../Utils';
-import { BoardToolTipController } from './BoardToolTipController';
+import { ToolTipController } from './ToolTipController';
 import OptionsMenu from './OptionsMenu';
 
 
@@ -18,7 +18,7 @@ interface GameUiContainerProps {
   canvasInterface: CanvasInterface;
 }
 
-let tooltipController: BoardToolTipController;
+let tooltipController: ToolTipController;
 
 export default function GameUiContainer({canvasInterface}: GameUiContainerProps) {
 
@@ -42,7 +42,7 @@ export default function GameUiContainer({canvasInterface}: GameUiContainerProps)
 
   
   useEffect(() => {
-    tooltipController = new BoardToolTipController(tooltipLayerRef.current, canvasInterface);
+    tooltipController = new ToolTipController(tooltipLayerRef.current, canvasInterface);
     return () => {
       tooltipController.dispose();
     }

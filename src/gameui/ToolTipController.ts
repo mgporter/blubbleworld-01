@@ -1,4 +1,3 @@
-import { Vector3 } from "three";
 import CanvasInterface from "../systems/CanvasInterface";
 import { Selectable } from "../types";
 import { Tooltip, TooltipProps } from "./ToolTip";
@@ -26,7 +25,7 @@ const redTooltip: TooltipProps = {
 type ToolTipColors = "red" | "green";
 
 
-class BoardToolTipController {
+class ToolTipController {
   
   static PADDING = 50;
   static TOOLTIPOFFSETHEIGHT = 150;
@@ -37,6 +36,7 @@ class BoardToolTipController {
 
   #_resizeCanvas;
   #_draw;
+  #_removeAllToolTips;
 
 
   constructor(container: HTMLDivElement, canvasInterface: CanvasInterface) {
@@ -46,9 +46,11 @@ class BoardToolTipController {
 
     this.#_resizeCanvas = this.#resizeCanvas.bind(this);
     this.#_draw = this.#draw.bind(this);
+    this.#_removeAllToolTips = () => this.removeAllToolTips(true);
 
     window.addEventListener('resize', this.#_resizeCanvas);
     window.addEventListener('cameraUpdate', this.#_draw);
+    window.addEventListener('createWorld', this.#_removeAllToolTips);
 
     this.#resizeCanvas();
   }
@@ -109,8 +111,8 @@ class BoardToolTipController {
     }, removeInstantly);
   }
 
-  removeAllToolTips() {
-    this.#activeTooltips.forEach(x => this.removeTooltip(x));
+  removeAllToolTips(removeInstantly?: boolean) {
+    this.#activeTooltips.forEach(x => this.removeTooltip(x, removeInstantly));
   }
 
   #draw() {
@@ -132,9 +134,10 @@ class BoardToolTipController {
   dispose() {
     window.removeEventListener('resize', this.#_resizeCanvas);
     window.removeEventListener('cameraChange', this.#_draw);
+    window.removeEventListener('createWorld', this.#_removeAllToolTips);
   }
 
 }
 
 
-export { BoardToolTipController };
+export { ToolTipController };

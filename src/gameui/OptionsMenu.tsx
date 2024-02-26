@@ -1,10 +1,10 @@
 import { motion } from "framer-motion";
 import { useState } from "react";
-import { C } from "../Constants";
-import TerrainSlider from "./TerrainSlider";
 import OptionAdjustTerrain from "./OptionAdjustTerrain";
 import CanvasInterface from "../systems/CanvasInterface";
-import gearIcon from "../images/gear_icon.svg";
+import OptionGenerateWorld from "./OptionGenerateWorld";
+import OptionMathPracticeMode from "./OptionMathPracticeMode";
+import { C } from "../Constants";
 
 interface OptionsMenuProps {
   canvasInterface: CanvasInterface;
@@ -16,23 +16,27 @@ const gearIconPath = "M 405 572.035156 C 312.746094 572.035156 237.964844 497.25
 export default function OptionsMenu({canvasInterface}: OptionsMenuProps) {
 
   const [showOptionsMenu, setShowOptionsMenu] = useState(false);
-  const [mathPracticeMode, setMathPracticeMode] = useState(C.showQuestions);
-
 
   function handleAdjustTerrain(pondPercent: number, mountainPercent: number) {
     canvasInterface.rebuildExistingWorld(pondPercent, 100 - mountainPercent);
   }
 
-  function toggleMathPracticeMode() {
-    setMathPracticeMode(!mathPracticeMode);
-    C.showQuestions = !mathPracticeMode
+  function handleGenerateNewWorld(length: number, width: number) {
+    canvasInterface.createWorld(
+      length,
+      width,
+      C.pondPercent,
+      C.mountainPercent,
+      Math.random(),
+    );
   }
+
 
   let menuWidth, menuHeight, itemsOpacity, itemsDelay, itemsDuration, itemsPointerEvents, borderRadius;
 
   if (showOptionsMenu) {
     menuWidth = "14rem";
-    menuHeight = "20rem";
+    menuHeight = "23rem";
     itemsOpacity = 1;
     itemsDelay = 0.24;
     itemsDuration = 0.2;
@@ -61,7 +65,7 @@ export default function OptionsMenu({canvasInterface}: OptionsMenuProps) {
         <div className="mt-2 mr-2" onClick={() => setShowOptionsMenu(!showOptionsMenu)}>
           <svg className={"group cursor-pointer transition-all duration-150 " + (showOptionsMenu ? "rotate-[-45deg] " : "rotate-0 ")}
             xmlns="http://www.w3.org/2000/svg" width="32" viewBox="0 0 810 810" height="32" preserveAspectRatio="xMidYMid meet" version="1.0">
-            <path className={"fill-white transition-color group-hover:fill-slate-300 group-active:fill-lime-300 "}
+            <path className={"fill-amber-200 group-hover:fill-amber-400 group-active:fill-amber-600 "}
               d={gearIconPath} fillOpacity="1" />
           </svg>
         </div>
@@ -71,9 +75,9 @@ export default function OptionsMenu({canvasInterface}: OptionsMenuProps) {
           layoutId="optionsMenuOpenCloseAction"
           className={itemsPointerEvents + "w-full h-full flex flex-col p-2"}>
           <ul className="flex flex-col gap-2 mt-2">
-            <li className={optionsItemsStyles} onClick={toggleMathPracticeMode}>Turn {mathPracticeMode ? "off" : "on"} Math Practice Mode</li>
-            <li className={optionsItemsStyles} ><OptionAdjustTerrain handleAdjustTerrain={handleAdjustTerrain} /></li>
-            <li className={optionsItemsStyles}>Generate New World</li>
+            <li className={optionsItemsStyles}><OptionMathPracticeMode /></li>
+            <li className={optionsItemsStyles}><OptionAdjustTerrain handleAdjustTerrain={handleAdjustTerrain} /></li>
+            <li className={optionsItemsStyles}><OptionGenerateWorld handleGenerateNewWorld={handleGenerateNewWorld} /></li>
           </ul>
         </motion.div>
 

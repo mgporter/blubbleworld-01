@@ -46,7 +46,7 @@ export default class CanvasInterface {
 
   constructor() {
     this.#scene = new MyScene();
-    this.#camera = new MyPerspectiveCamera(35, 1, 0.1, 100);
+    this.#camera = new MyPerspectiveCamera(35, 1, 0.1, 200);
     this.#raycaster = new Raycaster();
     this.#worldSeed = 0;
 
@@ -172,6 +172,9 @@ export default class CanvasInterface {
     this.#worldSeed = seed != null ? seed : Math.random();
 
     this.clearWorld();
+    window.dispatchEvent(new Event("createWorld"));
+    
+    this.#flyControls?.setCameraMovementLimits(sizeX, sizeY);
 
     const directionalLight = Lights.createDirectionalLight();
     const ambientLight = Lights.createAmbientLight();
@@ -181,6 +184,8 @@ export default class CanvasInterface {
     this.#selectables = this.#board.getSelectables();
 
     this.#mouseEvents?.setObjects(this.#selectables);
+
+
   }
 
   rebuildExistingWorld(pondPercent: number, mountainPercent: number) {

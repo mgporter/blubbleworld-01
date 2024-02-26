@@ -9,15 +9,16 @@ import {
 import { C } from '../Constants';
 import { Animatable } from '../types';
 import { MouseEventEmitter } from './EventEmitter';
+import { clamp } from '../Utils';
 
 const _changeEvent = { type: 'change' };
 const updateEvent = new Event("cameraUpdate");
 
-let _contextmenu: (e: Event) => void;
-let _pointermove: (e: Event) => void;
-let _pointerdown: (e: Event) => void;
-let _pointerup: (e: Event) => void;
-let _pointercancel: () => void;
+// let _contextmenu: (e: Event) => void;
+// let _pointermove: (e: Event) => void;
+// let _pointerdown: (e: Event) => void;
+// let _pointerup: (e: Event) => void;
+// let _pointercancel: () => void;
 let _keydown: (e: KeyboardEvent) => void;
 let _keyup: (e: KeyboardEvent) => void;
 
@@ -41,7 +42,7 @@ class MyFlyControls extends EventDispatcher implements Animatable {
 
   #camera;
   #enableLimits;
-  #moveLimits;
+  #moveLimits: {MIN: Vector3, MAX: Vector3};
   #renderer;
   #tmpQuaternion;
   #status;
@@ -61,12 +62,7 @@ class MyFlyControls extends EventDispatcher implements Animatable {
 		this.#camera = camera
 		this.#renderer = renderer;
 
-    // MIN: DOWN, HEIGHTMIN, LEFT
-    // MAX: UP, HEIGHTMAX, RIGHT
-    this.#moveLimits = {
-      MIN: new Vector3(-16, 2, -1),
-      MAX: new Vector3(C.worldsizeY - 7, 18, C.worldsizeX + 4)
-    }
+    this.#moveLimits = this.setCameraMovementLimits(C.worldsizeX, C.worldsizeY);
 
 		this.#enabled = false;
 		this.movementSpeed = 10;
@@ -102,13 +98,13 @@ class MyFlyControls extends EventDispatcher implements Animatable {
     this.#movementSpeedMultiplier = 1;
 
 
-		_contextmenu = this.contextMenu.bind( this );
-		_pointermove = this.pointermove.bind( this );
-		_pointerdown = this.pointerdown.bind( this );
-		_pointerup = this.pointerup.bind( this );
-		_pointercancel = this.pointercancel.bind( this );
-		_keydown = this.keydown.bind( this );
-		_keyup = this.keyup.bind( this );
+		// _contextmenu = this.#contextMenu.bind( this );
+		// _pointermove = this.#pointermove.bind( this );
+		// _pointerdown = this.#pointerdown.bind( this );
+		// _pointerup = this.#pointerup.bind( this );
+		// _pointercancel = this.#pointercancel.bind( this );
+		_keydown = this.#keydown.bind( this );
+		_keyup = this.#keyup.bind( this );
 
 		// this.#domElement.addEventListener('contextmenu', _contextmenu);
 		// this.#domElement.addEventListener('pointerdown', _pointerdown);
@@ -116,8 +112,8 @@ class MyFlyControls extends EventDispatcher implements Animatable {
 		// this.#domElement.addEventListener('pointerup', _pointerup);
 		// this.#domElement.addEventListener('pointercancel', _pointercancel);
 
-		this.updateMovementVector();
-		this.updateRotationVector();
+		this.#updateMovementVector();
+		this.#updateRotationVector();
 
 	}
 
@@ -149,9 +145,30 @@ class MyFlyControls extends EventDispatcher implements Animatable {
     this.#enabled = false;
   }
 
+  setCameraMovementLimits(worldLength: number, worldWidth: number) {
+
+    const maxDimension = Math.max(worldLength, worldWidth);
+    const heightLimit = maxDimension/2 + 10;
+
+    // MIN: FORWARDS, HEIGHTMIN, LEFT
+    // MAX: BACK, HEIGHTMAX, RIGHT
+    // this.#moveLimits = {
+    //   MIN: new Vector3(-16, 2, -1),
+    //   MAX: new Vector3(worldWidth - 7, heightLimit, worldLength + 4)
+    // }
+
+    this.#moveLimits = {
+      MIN: new Vector3(Number.MIN_SAFE_INTEGER, 2, -1),
+      MAX: new Vector3(Number.MAX_SAFE_INTEGER, heightLimit, worldLength + 4)
+    }
+
+    this.#camera.position.clamp(this.#moveLimits.MIN, this.#moveLimits.MAX);
+
+    return this.#moveLimits;
+  }
   
 
-  keydown(event: KeyboardEvent) {
+  #keydown(event: KeyboardEvent) {
 
     if ( event.altKey || this.#enabled === false ) {
       return;
@@ -185,13 +202,13 @@ class MyFlyControls extends EventDispatcher implements Animatable {
 
     }
 
-    this.updateMovementVector();
-    this.updateRotationVector();
+    this.#updateMovementVector();
+    this.#updateRotationVector();
     
 
   }
 
-  keyup(event: KeyboardEvent) {
+  #keyup(event: KeyboardEvent) {
 
     if ( this.#enabled === false ) return;
 
@@ -220,14 +237,14 @@ class MyFlyControls extends EventDispatcher implements Animatable {
 
     }
 
-    this.updateMovementVector();
-    this.updateRotationVector();
+    this.#updateMovementVector();
+    this.#updateRotationVector();
 
-    if (this.isStopped()) this.disableDispatch();
+    if (this.#isStopped()) this.#disableDispatch();
 
   }
 
-  isStopped() {
+  #isStopped() {
     return this.#moveVector.x === 0 &&
       this.#moveVector.y === 0 &&
       this.#moveVector.z === 0;
@@ -240,7 +257,7 @@ class MyFlyControls extends EventDispatcher implements Animatable {
     //   this.#moveState.down === 0;
   }
 
-  disableDispatch() {
+  #disableDispatch() {
     this.dispatchEvents = false;
     setTimeout(() => {
       // this.dispatchEvents = false;
@@ -248,7 +265,7 @@ class MyFlyControls extends EventDispatcher implements Animatable {
     }, 20);
   }
 
-  pointerdown(event: Event) {
+  #pointerdown(event: Event) {
 
     if ( this.#enabled === false ) return;
 
@@ -265,32 +282,32 @@ class MyFlyControls extends EventDispatcher implements Animatable {
 
       }
 
-      this.updateMovementVector();
+      this.#updateMovementVector();
 
     }
 
   }
 
-  pointermove(event: Event) {
+  #pointermove(event: Event) {
 
     if ( this.#enabled === false ) return;
 
     if ( ! this.dragToLook || this.#status > 0 ) {
 
-      const container = this.getContainerDimensions();
+      const container = this.#getContainerDimensions();
       const halfWidth = container.size[ 0 ] / 2;
       const halfHeight = container.size[ 1 ] / 2;
 
       this.#moveState.yawLeft = - ( ( (event as PointerEvent).pageX - container.offset[ 0 ] ) - halfWidth ) / halfWidth;
       this.#moveState.pitchDown = ( ( (event as PointerEvent).pageY - container.offset[ 1 ] ) - halfHeight ) / halfHeight;
 
-      this.updateRotationVector();
+      this.#updateRotationVector();
 
     }
 
   }
 
-  pointerup(event: Event) {
+  #pointerup(event: Event) {
 
     if ( this.#enabled === false ) return;
 
@@ -309,15 +326,15 @@ class MyFlyControls extends EventDispatcher implements Animatable {
 
       }
 
-      this.updateMovementVector();
+      this.#updateMovementVector();
 
     }
 
-    this.updateRotationVector();
+    this.#updateRotationVector();
 
   }
 
-  pointercancel() {
+  #pointercancel() {
 
     if ( this.#enabled === false ) return;
 
@@ -332,15 +349,15 @@ class MyFlyControls extends EventDispatcher implements Animatable {
       this.#moveState.forward = 0;
       this.#moveState.back = 0;
 
-      this.updateMovementVector();
+      this.#updateMovementVector();
 
     }
 
-    this.updateRotationVector();
+    this.#updateRotationVector();
 
   }
 
-  contextMenu(event: Event) {
+  #contextMenu(event: Event) {
 
     if ( this.#enabled === false ) return;
 
@@ -362,8 +379,16 @@ class MyFlyControls extends EventDispatcher implements Animatable {
     // this.#camera.translateY( this.#moveVector.y * moveMult );
     this.#camera.translateZ( this.#moveVector.z * moveMult ); // Zoom In/Out
 
-    if (this.#enableLimits)
+    if (this.#enableLimits) {
+      // First clamp height and Left/Right movement
       this.#camera.position.clamp(this.#moveLimits.MIN, this.#moveLimits.MAX);
+
+      // Then clamp forward and back movement based on height
+      const min = -this.#camera.position.y;
+      const max = -(this.#camera.position.y * 0.9) + C.worldsizeY;
+      this.#camera.position.x = clamp(this.#camera.position.x, min, max);
+    }
+
 
     if (this.dispatchEvents) window.dispatchEvent(updateEvent);
 
@@ -389,7 +414,7 @@ class MyFlyControls extends EventDispatcher implements Animatable {
 
   }
 
-  updateMovementVector() {
+  #updateMovementVector() {
 
     // X is Left/Right; Z is Zoomin/out
     const forward = ( this.#moveState.forward || ( this.autoForward && ! this.#moveState.back ) ) ? 1 : 0;
@@ -402,7 +427,7 @@ class MyFlyControls extends EventDispatcher implements Animatable {
 
   }
 
-  updateRotationVector() {
+  #updateRotationVector() {
 
     this.#rotationVector.x = ( - this.#moveState.pitchDown + this.#moveState.pitchUp );
     this.#rotationVector.y = ( - this.#moveState.yawRight + this.#moveState.yawLeft );
@@ -412,7 +437,7 @@ class MyFlyControls extends EventDispatcher implements Animatable {
 
   }
 
-  getContainerDimensions() {
+  #getContainerDimensions() {
 
     if (this.#renderer.domElement instanceof HTMLElement) {
 

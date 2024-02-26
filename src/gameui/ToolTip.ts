@@ -1,6 +1,6 @@
 import { clamp } from "three/src/math/MathUtils.js";
 import { Selectable } from "../types";
-import { BoardToolTipController } from "./BoardToolTipController";
+import { ToolTipController } from "./ToolTipController";
 import { Vector3 } from "three";
 
 export interface TooltipProps {
@@ -123,10 +123,10 @@ class Tooltip {
     this.#canvasRect = this.#domElements.canvas.getBoundingClientRect();
     this.#tooltipRect = this.#domElements.tooltipDiv.getBoundingClientRect();
 
-    this.#leftLimit = BoardToolTipController.PADDING;
-    this.#topLimit = BoardToolTipController.PADDING;
-    this.#rightLimit = this.#canvasRect.width - BoardToolTipController.PADDING - this.#tooltipRect.width;
-    this.#bottomLimit = this.#canvasRect.height - BoardToolTipController.PADDING - this.#tooltipRect.height;
+    this.#leftLimit = ToolTipController.PADDING;
+    this.#topLimit = ToolTipController.PADDING;
+    this.#rightLimit = this.#canvasRect.width - ToolTipController.PADDING - this.#tooltipRect.width;
+    this.#bottomLimit = this.#canvasRect.height - ToolTipController.PADDING - this.#tooltipRect.height;
 
     this.#tooltipHalfWidth = this.#tooltipRect.width / 2;
 
@@ -140,7 +140,7 @@ class Tooltip {
   draw(position: Vector3) {
 
     const tooltipX = clamp(position.x - this.#tooltipHalfWidth, this.#leftLimit, this.#rightLimit);
-    const tooltipY = clamp(position.y - BoardToolTipController.TOOLTIPOFFSETHEIGHT, this.#topLimit, this.#bottomLimit);
+    const tooltipY = clamp(position.y - ToolTipController.TOOLTIPOFFSETHEIGHT, this.#topLimit, this.#bottomLimit);
     this.tooltipAboveTarget = tooltipY < position.y;
 
     this.#domElements.tooltipDiv.style.transform = `translate(${tooltipX}px, ${tooltipY}px)`;

@@ -281,8 +281,9 @@ export default function QuestionDialogBox({
 
         <div className="flex gap-4 text-white text-xl m-2 items-center">
             <p>{equation}</p>
-            <input className="font-bold w-16 bg-transparent text-center align-middle text-2xl
-            border-white border-b-2 border-opacity-50 hover:border-opacity-100 focus:border-opacity-100"
+            <input className="font-bold w-16 bg-black text-center align-middle text-2xl
+            border-white border-b-2 border-opacity-50 hover:border-opacity-100 
+             caret-white focus:border-opacity-100 px-2 rounded-md"
              type="number" onChange={handleAnswerInput} value={answer}></input>
             <button onClick={submitAnswer} className="btn btn-emerald">{buttonText}</button>
         </div>
