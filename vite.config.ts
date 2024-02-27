@@ -8,4 +8,5 @@ export default defineConfig({
     hmr: {overlay: false},
   },
   assetsInclude: ['**/*.glb', '**/*.png'],
+  base: "/"
 })
