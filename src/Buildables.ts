@@ -78,8 +78,8 @@ export const Buildables: BuildableList = {
     selector: new FlexibleRectangleSelector({
       buildableMaxHeight: 1, 
       allowIncompleteRectangles: true, 
-      length: 5, 
-      width: 5,
+      length: 10, 
+      width: 10,
       meshesToSelect: {canPlaceBuildable: true, isOccupied: false},
       meshesToHover: {canPlaceBuildable: true},
     }),
@@ -105,8 +105,8 @@ export const Buildables: BuildableList = {
     selector: new FlexibleRectangleSelector({
       buildableMaxHeight: 1, 
       allowIncompleteRectangles: true, 
-      length: 5, 
-      width: 5,
+      length: 10, 
+      width: 10,
       meshesToSelect: {canPlaceBuildable: true, isOccupied: false},
       meshesToHover: {canPlaceBuildable: true},
     }),

@@ -2,7 +2,7 @@ import { ChangeEvent, useRef, useState } from "react";
 import OptionsButton from "./OptionsButton";
 import { C } from "../Constants";
 
-const inputProps = "w-8 rounded-sm ml-1 text-black px-0.5 invalid:bg-red-300";
+const inputProps = "w-9 rounded-sm ml-1 text-black pl-[4px] pr-[4px] invalid:bg-red-300 text-center";
 
 interface OptionGenerateWorldProps {
   handleGenerateNewWorld: (l: number, w: number) => void;
@@ -45,7 +45,7 @@ export default function OptionGenerateWorld({handleGenerateNewWorld}: OptionGene
   return (
     <div>
       <p>Generate New World</p>
-      <div className="flex gap-4 my-3">
+      <div className="flex gap-3 my-3">
         <label htmlFor="length">Length: 
           <input onFocus={setModifier} onChange={handleChange} value={length}
             id="length" name="length" type="number" className={inputProps}

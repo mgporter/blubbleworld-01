@@ -1,7 +1,7 @@
 import { ChangeEvent, useState } from "react"
 import { NonNullableFinishSelectionObject } from "../types";
 import { BuildableType, Buildables } from "../Buildables";
-import { motion } from "framer-motion";
+import { AnimationSequence, motion, useAnimate } from "framer-motion";
 import { C } from "../Constants";
 import { ConnectingSelector, MouseEventHandler } from "../systems/MouseEventHandlers";
 import { useStore } from "./Store";
@@ -25,6 +25,8 @@ export default function QuestionDialogBox({
 
   const [answer, setAnswer] = useState("");
   const money = useStore((state) => state.money);
+
+  const [scope, animate] = useAnimate();
 
   const building = Buildables[selectedBuilding];
   let headlineText: string;
@@ -145,6 +147,7 @@ export default function QuestionDialogBox({
     case "hotel": {
 
       let connectorQuantity = 0;
+      const connectorCapacity = building.connectorCapacity || 1;
       const hotelCount = questionDialogData.objects.length;
       const hotelPlural = hotelCount > 1;
 
@@ -176,8 +179,9 @@ export default function QuestionDialogBox({
 
       equation = 
         `(${hotelCount} ${hotelPlural ? building.plural : building.displayName} × ${building.capacity}) + ` + 
-        `(${connectorQuantity} connectors × 2) =`;
-      correctAnswer = quantity * building.capacity;
+        `(${connectorQuantity} connectors × ${connectorCapacity}) =`;
+      correctAnswer = (hotelCount * building.capacity) + (connectorQuantity * connectorCapacity);
+      console.log(correctAnswer);
       buttonText = "Build it!";
       break;
     }
@@ -206,27 +210,28 @@ export default function QuestionDialogBox({
     setAnswer(answer);
   }
 
+  const wrongAnswerAnimationSequence: AnimationSequence = [
+    [scope.current, {transform: "translate(-15px, 0)"}, {duration: 0.06, ease: "linear"}],
+    [scope.current, {transform: "translate(15px, 0)"}, {duration: 0.06, ease: "linear"}],
+    [scope.current, {transform: "translate(-12px, 0)"}, {duration: 0.06, ease: "linear"}],
+    [scope.current, {transform: "translate(12px, 0)"}, {duration: 0.06, ease: "linear"}],
+    [scope.current, {transform: "translate(-4px, 0)"}, {duration: 0.06, ease: "linear"}],
+    [scope.current, {transform: "translate(4px, 0)"}, {duration: 0.06, ease: "linear"}],
+  ]
+
   function submitAnswer() {
     if (Number(answer) === correctAnswer) {
+      // If the user writes the correct answer
       placeBuildingOnCanvas();
     } else {
-      
-      // placeBuildingOnCanvas();
+      // If the user writes the wrong answer
+      animate(wrongAnswerAnimationSequence);
     }
   }
 
-
-
-
-
-
-  // console.log(questionDialogData)
-  // console.log(cells)
-  // console.log(gridSize)
-
-
   return (
-    <div className='absolute w-full h-full flex justify-center items-center z-[500]'
+    <div className='absolute w-full h-full flex justify-center items-center 
+      z-[500] backdrop-blur-sm pointer-events-auto'
       style={{perspective: "800px"}}>
 
       {/* This is the container with a background */}
@@ -234,6 +239,7 @@ export default function QuestionDialogBox({
          justify-evenly items-center pointer-events-auto'
         initial={{rotateX: 90}}
         animate={{rotateX: 0}}
+        ref={scope}
         transition={{duration: 0.6, ease: "anticipate"}}>
 
         <div className="absolute top-0 right-3 text-red-500 text-5xl font-bold
@@ -257,7 +263,7 @@ export default function QuestionDialogBox({
                 </div>
               ))}
             
-          {/* This is the dummy grid container */}
+          {/* This is the dummy grid container used for hotel connectors */}
           <div className={`absolute inset-0 grid gap-[2px] z-20 pointer-events-none`}
             style={{
               gridTemplateRows: `repeat(${gridSize.row}, minmax(0, 1fr))`, 
@@ -281,7 +287,7 @@ export default function QuestionDialogBox({
 
         <div className="flex gap-4 text-white text-xl m-2 items-center">
             <p>{equation}</p>
-            <input className="font-bold w-16 bg-black text-center align-middle text-2xl
+            <input className="font-bold w-20 bg-black text-center align-middle text-2xl
             border-white border-b-2 border-opacity-50 hover:border-opacity-100 
              caret-white focus:border-opacity-100 px-2 rounded-md"
              type="number" onChange={handleAnswerInput} value={answer}></input>

@@ -1,4 +1,4 @@
-import { DragEvent, MutableRefObject, PointerEvent, useEffect, useRef, useState } from "react";
+import { useEffect, useRef } from "react";
 import { clamp } from "../Utils";
 import { C } from "../Constants";
 
@@ -8,8 +8,6 @@ interface TerrainSliderProps {
   mountainPercent: number;
   setMountainPercent: (val: number) => void;
 }
-
-type SliderType = "water" | "mountain";
 
 const SLIDERPADDING = 6;
 
@@ -30,10 +28,6 @@ export default function TerrainSlider({
     max: 0,
     min: 0,
   });
-  
-  // const selectedSliderRef = useRef<HTMLDivElement>(waterSliderRef.current);
-  // const selectedPropertySetter = useRef(setWaterPercent);
-
 
   useEffect(() => {
     setSliderBoundsFunc();
@@ -44,7 +38,6 @@ export default function TerrainSlider({
 
     const initialMountainSliderPosition = ((100 - C.mountainPercent) * 190) / 100;
     mountainSliderRef.current.style.transform = `translate(${initialMountainSliderPosition}px, 0px)`;
-    console.log(initialMountainSliderPosition)
   }, []);
 
   function setSliderBoundsFunc() {
@@ -98,15 +91,14 @@ export default function TerrainSlider({
     }
 
     window.addEventListener("pointermove", handlerSliderDrag);
-    window.addEventListener("pointerup", handleDragEnd, {once: true})
+    window.addEventListener("pointerup", handleDragEnd, {once: true});
   }
 
-  function handleDragEnd(e: MouseEvent) {
+  function handleDragEnd() {
     document.body.style.cursor = "";
     window.removeEventListener("pointermove", handlerSliderDrag);
   }
 
-  // bg-gradient-to-r from-blue-500 via-green-500 to-stone-600
   return (
     <div className="h-4 mt-6 mb-2 flex flex-col justify-center">
       <div ref={sliderbarRef} className="sliderbar relative w-full h-[8px] border-r-gray-600 border-b-gray-600 

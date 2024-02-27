@@ -1,3 +1,4 @@
+import { PointerEvent, useState } from "react";
 import IconContainer from "./IconContainer";
 
 interface NavSelectionOptionProps {
@@ -13,6 +14,16 @@ export default function NavSelectionOption({
   subText,
   onClickHandler
 }: NavSelectionOptionProps) {
+
+  // const [mouse, setMouse] = useState({x: 0, y: 0});
+
+  // function onPointerMove(e: PointerEvent) {
+  //   setMouse({x: e.clientX, y: e.clientY});
+  // }
+
+  // function showBuildingInfo() {
+
+  // }
 
   return (
     <div onClick={onClickHandler} className="flex border-transparent hover:border-amber-700 border-4 bg-gray-800/30 rounded-xl

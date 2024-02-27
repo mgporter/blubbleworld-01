@@ -12,6 +12,7 @@ import { C } from '../Constants';
 import { calculateTransactionAmount } from '../Utils';
 import { ToolTipController } from './ToolTipController';
 import OptionsMenu from './OptionsMenu';
+import StartupDialog from './StartupDialog';
 
 
 interface GameUiContainerProps {
@@ -31,6 +32,7 @@ export default function GameUiContainer({canvasInterface}: GameUiContainerProps)
   const [showQuestionDialog, setShowQuestionDialog] = useState(false);
   const [buildMenuEnabled, setBuildMenuEnabled] = useState(true);
   const [showCoordinateToolTip, setShowCoordinateToolTip] = useState(true);
+  const [showStartupDialog, setShowStartupDialog] = useState(true);
 
   const [selectedBuilding, setSelectedBuilding] = useState<BuildableType>("noSelection");
   const [questionDialogData, setQuestionDialogData] = 
@@ -192,6 +194,9 @@ export default function GameUiContainer({canvasInterface}: GameUiContainerProps)
   
   return (
     <div id="gameui-container" className='absolute z-30 w-full h-svh flex pointer-events-none'>
+
+      {showStartupDialog && <StartupDialog setShowStartupDialog={setShowStartupDialog} />}
+
       <BuildMenu 
         onBuildingSelect={onBuildingSelect}
         buildMenuEnabled={buildMenuEnabled}
@@ -208,7 +213,9 @@ export default function GameUiContainer({canvasInterface}: GameUiContainerProps)
       <div className="relative h-full w-full flex flex-col justify-between z-[50]">
 
         <TopBar>
-          <OptionsMenu canvasInterface={canvasInterface} />
+          <OptionsMenu 
+            canvasInterface={canvasInterface}
+            setShowStartupDialog={setShowStartupDialog} />
         </TopBar>
 
         <div className='bottombar grow-0 h-12 m-2 flex items-center justify-center'>
