@@ -16,10 +16,10 @@ const C = {
   peopleNamePlural: "blubbles",
   blubbleBaseTravelSpeed: 4,          // How fast the blubbles travel from the edge of the board to their building
 
-  showQuestions: false,               // Show the math questions when a building is placed
+  showQuestions: true,               // Show the math questions when a building is placed
   showBlubbles: true,
   populationGoal: 500,              // The population goal to reach for this round
-  startingMoney: 10000,
+  startingMoney: 1000000000,
   maxMarkerCharacters: 60,
 }
 

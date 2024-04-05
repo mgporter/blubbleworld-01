@@ -1,30 +1,15 @@
-# React + TypeScript + Vite
+# Blubble's World
+## World builder for a future math app!
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Blubble's World is currently in development. It is meant as a future tool to help build math skills in elementary-aged children by asking them mathematical questions about the world they are building and changing. Right now, this app is just a demo to show what that world could look like.
 
-Currently, two official plugins are available:
+Enable math practice mode in the options menu. This mode asks questions after placement of a building.
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react/README.md) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+You can also change and regenerate the world as you like. Note that all buildings and markers will be lost when changing the world in this way.
 
-## Expanding the ESLint configuration
+## Technologies
 
-If you are developing a production application, we recommend updating the configuration to enable type aware lint rules:
-
-- Configure the top-level `parserOptions` property like this:
-
-```js
-export default {
-  // other rules...
-  parserOptions: {
-    ecmaVersion: 'latest',
-    sourceType: 'module',
-    project: ['./tsconfig.json', './tsconfig.node.json'],
-    tsconfigRootDir: __dirname,
-  },
-}
-```
-
-- Replace `plugin:@typescript-eslint/recommended` to `plugin:@typescript-eslint/recommended-type-checked` or `plugin:@typescript-eslint/strict-type-checked`
-- Optionally add `plugin:@typescript-eslint/stylistic-type-checked`
-- Install [eslint-plugin-react](https://github.com/jsx-eslint/eslint-plugin-react) and add `plugin:react/recommended` & `plugin:react/jsx-runtime` to the `extends` list
+- Built on React and Three.js with typescript.
+- Object-oriented design: streamlined selection and building placement system allows easy editing and changing of building properties. For example, building max height, what part of the landscape it can be placed at, etc can all be changed with just one variable.
+- Uses Three.js InstancedMesh class to create landscapes that render efficiently and quickly, which is combined with custom objects to hold the state (selected / hovered / etc..) of each instance.
+- Converts mouse coordinates to 3d world coordinates and vice versa in order to properly align elements between the canvas layer and HTML overlay (for example, the marker system and selection system).
